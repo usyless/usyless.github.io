@@ -48,11 +48,8 @@ onmessage = (e) => {
                         export_string.addData(lowFR.toFixed(FRprec), spl);
                         minAdded = true;
                     }
-                    if (freq <= highFR) export_string.addData(freq.toFixed(FRprec), spl);
-                    else {
-                        export_string.addData(freq.toFixed(FRprec), spl);
-                        break;
-                    }
+                    export_string.addData(freq.toFixed(FRprec), spl);
+                    if (freq >= highFR) break;
                 }
             }
             if (freq <= highFR) {
