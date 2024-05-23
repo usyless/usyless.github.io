@@ -140,11 +140,13 @@ ${freq.toString()} ${spl.toString()}`
 
 function cleanUpData(data) {
     simplifiedTrace = new Map();
-    let z, avg, n = data.entries().next().value[0], identity = [];
+    let z, avg, n = data.entries().next().value[0], identity = [], finalKey, finalValue;
     simplifiedTrace.set(n, data.get(n));
     for (let i = n + 1; i < imageData.width; i++) {
         z = data.get(i);
         if (z) {
+            finalKey = i;
+            finalValue = z;
             identity = [];
             for (let j = i; data.get(j) === z; j++) identity.push(j);
             if (identity.length === 1) {
@@ -156,5 +158,5 @@ function cleanUpData(data) {
             }
         }
     }
-
+    simplifiedTrace.set(finalKey, finalValue);
 }
