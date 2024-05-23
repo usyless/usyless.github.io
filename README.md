@@ -1,6 +1,8 @@
 # Usy's Online SPL Tracer
 
-All Processing is done on device and no analytics are performed.
+- All Processing is done on device and no analytics are performed. 
+- #### Feel free to contribute or suggest changes
+- #### Found a bug? Report it to @usy_ on Discord!
 
 ## General use:
 - Press "Choose Image" and choose an image to trace from
@@ -38,7 +40,3 @@ All Processing is done on device and no analytics are performed.
 - Colour of the traced line on screen
 ### Trace Line Thickness:
 - Thickness of the traced line on screen
-
-## Messed up settings? Press the "Restore Default Settings" button to restore them to the recommended defaults.
-
-## Found a bug? Report it to @usy_ on Discord!
