@@ -49,7 +49,7 @@ onmessage = (e) => {
                         minAdded = true;
                     }
                     export_string.addData(freq.toFixed(FRprec), spl);
-                    if (freq >= highFR) break;
+                    if (freq > highFR) break;
                 }
             }
             if (freq <= highFR) {
