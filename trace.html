@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPL Trace</title>
+    <link rel="stylesheet" href="trace.css">
+</head>
+<body>
+<div id="sidebar">
+    <div>
+        <h1>SPL Trace</h1>
+    </div>
+    <div class="divButton sidebarSection">
+        <input type='file' id='imageInput' class="hidden" onchange='displayImage()' accept="image/*"/>
+        <label for="imageInput" id="imageInputLabel">Choose Image</label>
+    </div>
+    <div class="sidebarSection">
+        <div>
+            <button onclick="switchState(this)" id="pth" class="disableme">Select Path</button>
+        </div>
+        <div>
+            <button onclick="clearPath()" id="clearPath" class="disableme">Clear Path</button>
+        </div>
+        <div>
+            <button onclick="undo()" id="undo" class="disableme">Undo Latest Trace</button>
+        </div>
+        <div>
+            <button onclick="exportTrace()" id="export" class="disableme">Export Trace</button>
+        </div>
+    </div>
+    <div class="sidebarSection">
+        <div>
+            <label for="SPLTop">Higher SPL (dB): </label>
+            <input type="number" id="SPLTop"/>
+        </div>
+        <div>
+            <label for="SPLBot">Lower SPL (dB): </label>
+            <input type="number" id="SPLBot"/>
+        </div>
+        <div>
+            <label for="FRTop">Higher Frequency (Hz): </label>
+            <input type="number" id="FRTop"/>
+        </div>
+        <div>
+            <label for="FRBot">Lower Frequency (Hz): </label>
+            <input type="number" id="FRBot" onchange="minVal(this, 0)"/>
+        </div>
+    </div>
+    <div class="sidebarSection">
+        <div>
+            <h3>Settings</h3>
+        </div>
+        <div>
+            <label for="tolerance">Colour Tolerance: </label>
+            <input type="number" id="tolerance" min="1" onchange="minVal(this, 1)" value="50"/>
+        </div>
+        <div>
+            <label for="maxLineHeight">Max Line Thickness: </label>
+            <input type="number" id="maxLineHeight" min="1" onchange="minVal(this, 1)" value="25"/>
+        </div>
+        <div>
+            <label for="maxJump">Largest Contiguous Jump: </label>
+            <input type="number" id="maxJump" min="1" onchange="minVal(this, 1)" value="15"/>
+        </div>
+    </div>
+    <div class="sidebarSection">
+        <div>
+            <h3>Export Settings</h3>
+        </div>
+        <div>
+            <label for="lowFRExport">Minimum Frequency (Hz): </label>
+            <input type="number" id="lowFRExport" value="20" onchange="minVal(this, 0)"/>
+        </div>
+        <div>
+            <label for="highFRExport">Maximum Frequency (Hz): </label>
+            <input type="number" id="highFRExport" value="20000"/>
+        </div>
+        <div>
+            <label for="exportSPLPrecision">SPL Precision: </label>
+            <input type="number" id="exportSPLPrecision" value="3"/>
+        </div>
+        <div>
+            <label for="exportFRPrecision">Frequency Precision: </label>
+            <input type="number" id="exportFRPrecision" value="5"/>
+        </div>
+    </div>
+    <div class="sidebarSection">
+        <div>
+            <h3>Visual Settings</h3>
+        </div>
+        <div>
+            <label for="lineColour">Trace Line Colour: </label>
+            <input type="color" id="lineColour" onchange="updateLine()" value="#ff0000"/>
+        </div>
+        <div>
+            <label for="lineThickness">Trace Line Thickness: </label>
+            <input type="number" id="lineThickness" min="1" onchange="minVal(this, 1); updateLine()" value="3"/>
+        </div>
+    </div>
+    <div class="divButton sidebarSection" id="restoreDefault">
+        <label onclick="restoreDefault()">Restore Default Settings</label>
+    </div>
+</div>
+
+<div id="main-content">
+    <div id="inner-content">
+        <img id='uploadedImage' src='' alt='' class="removePointerEvents"/>
+        <canvas id="lineCanvas" class="canvasSizing"></canvas>
+        <canvas id="traceCanvas" class="canvasSizing removePointerEvents"></canvas>
+        <h1 temp_thing="true">Please Choose An Image</h1>
+    </div>
+</div>
+
+<script src='trace.js'></script>
+</body>
+</html>

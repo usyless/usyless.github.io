@@ -1,0 +1,125 @@
+body, html {
+    margin: 0;
+    height: 100%;
+    background-color: #1e1f22;
+    color: #b6b6b6;
+    font-family: Calibri, Candara, Segoe, Segoe UI, Optima, Arial, sans-serif;
+}
+
+button {
+    background: #1e1f22;
+    color: inherit;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+button:hover, .divButton:hover {
+  background: #3d3f42;
+}
+
+.divButton, .divButton * {
+    transition: background 0.3s ease;
+    cursor: pointer;
+}
+
+.divButton label {
+    background: none;
+}
+
+button:active, .divButton:active {
+    background: #4c4d53;
+    transition: background 0.1s ease;
+}
+
+button:disabled, .disabled {
+    background: #1e1f22;
+    color: #686868;
+}
+
+button:disabled:hover, .disabled:hover {
+    cursor: not-allowed;
+}
+
+input {
+    max-width: 100px;
+}
+
+input[type="number"] {
+    border: 2px solid #3d3f42;
+    border-radius: 5px;
+    color: inherit;
+    background-color: #1e1f22;
+    transition: border-color 0.1s ease;
+}
+
+input[type="number"]:hover {
+    border-color: #666;
+}
+
+input[type="number"]:focus {
+    outline: none;
+}
+
+#sidebar {
+    float: left;
+    overflow-y: scroll;
+    text-align: center;
+    width: 200px;
+    height: 100%;
+    background-color: #2b2d30;
+}
+
+.sidebarSection {
+    margin: 10px;
+    border: 5px solid #1e1f22;
+    background-color: #1e1f22;
+    border-radius: 10px;
+}
+
+.sidebarSection h3 {
+    margin-top: 3px;
+    margin-bottom: 3px;
+}
+
+.sidebarSection div {
+    margin: 1em;
+}
+
+#main-content {
+    margin-left: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: calc(100% - 200px);
+}
+
+#inner-content {
+    width: 95%;
+    height: 95vh;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#uploadedImage, .canvasSizing {
+    max-width: 100%;
+    max-height: 100%;
+    position: absolute;
+}
+
+.removePointerEvents {
+    pointer-events: none;
+}
+
+.hidden {
+    display: none;
+}
+
+.crosshair_hover {
+    cursor: crosshair;
+}
