@@ -145,10 +145,12 @@ function cleanUpData(data) {
     for (let i = n + 1; i < imageData.width; i++) {
         z = data.get(i);
         if (z) {
-            finalKey = i;
             finalValue = z;
             identity = [];
-            for (let j = i; data.get(j) === z; j++) identity.push(j);
+            for (let j = i; data.get(j) === z; j++) {
+                finalKey = j;
+                identity.push(j);
+            }
             if (identity.length === 1) {
                 simplifiedTrace.set(i, data.get(i));
             } else {
