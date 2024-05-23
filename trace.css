@@ -6,6 +6,10 @@ body, html {
     font-family: Calibri, Candara, Segoe, Segoe UI, Optima, Arial, sans-serif;
 }
 
+a {
+    color: #b6b6b6;
+}
+
 button {
     background: #1e1f22;
     color: inherit;
