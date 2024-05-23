@@ -65,6 +65,7 @@ input[type="number"]:hover {
 
 input[type="number"]:focus {
     outline: none;
+    border-color: #666;
 }
 
 #sidebar {
