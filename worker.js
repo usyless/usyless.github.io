@@ -127,7 +127,7 @@ class RGB {
 }
 
 class exportString {
-    data = `* Exported with usy's online SPL Trace tool /)
+    data = `* Exported with usy's FR Tracing tool at https://usyless.github.io/
 Freq(Hz) SPL(dB)`
     addData(freq, spl) {
         this.data += `
