@@ -81,10 +81,9 @@ onmessage = (e) => {
                 for (let i = start; loop_func(i); i += step) {
                     colours = [];
                     for (let [func, start] of funcs) {
-                        for (let z = start; z <= maxLineHeight; z++) {
+                        for (let z = start; z <= maxLineHeight + m; z++) {
                             n = Math.max(0, Math.min(imageData.height - 1, func(j, z)));
                             if (colour.withinTolerance(i, n)) colours.push(n);
-                            else break;
                         }
                     }
                     if (colours.length > 0) {
@@ -114,9 +113,11 @@ class RGB {
 
     withinTolerance(x, y) {
         let [newR, newG, newB] = RGB.getRGB(x, y);
-        return Math.abs(this.R - newR) <= this.tolerance &&
-            Math.abs(this.G - newG) <= this.tolerance &&
-            Math.abs(this.B - newB) <= this.tolerance;
+        let rmean = (this.R + newR) / 2;
+        let r = this.R - newR;
+        let g = this.G - newG;
+        let b = this.B - newB;
+        return Math.sqrt((((512+rmean)*r*r)>>8) + 4*g*g + (((767-rmean)*b*b)>>8)) <= this.tolerance;
     }
 
     static getRGB(x, y) {
