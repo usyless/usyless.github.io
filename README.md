@@ -12,6 +12,9 @@
 - Made a mistake? The undo button can bring you back one trace
 - Once you're done, press "Export Trace"
 
+## On Mobile
+### Usage
+- Move the SPL and Frequency lines by using the buttons, selecting the line to trace works as normal but may require more tries
 ### Line Move Speed
 - Speed at which the SPL and Frequency lines move at when holding the buttons
 
