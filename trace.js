@@ -86,41 +86,49 @@ function displayImage() {
             let offset = 0;
             let ratio = 1;
 
-            canvas.addEventListener('mousedown', (e) => {
-                let mouse = e.clientX - canvas.getBoundingClientRect().left;
-                ratio = img.naturalWidth / img.clientWidth;
+            ['mousedown', 'touchstart'].forEach(ev => {
+                canvas.addEventListener(ev, e => {
+                    e.preventDefault();
+                    let mouse = e.clientX - canvas.getBoundingClientRect().left;
+                    ratio = img.naturalWidth / img.clientWidth;
 
-                for (let line of xLines) {
-                    if (Math.abs(mouse * ratio - line.pos) < 10) {
-                        selectedLine = line;
-                        offset = mouse * ratio - line.pos;
-                        return;
+                    for (let line of xLines) {
+                        if (Math.abs(mouse * ratio - line.pos) < 10) {
+                            selectedLine = line;
+                            offset = mouse * ratio - line.pos;
+                            return;
+                        }
                     }
-                }
 
-                mouse = e.clientY - canvas.getBoundingClientRect().top;
-                for (let line of yLines) {
-                    if (Math.abs(mouse * ratio - line.pos) < 10) {
-                        selectedLine = line;
-                        offset = mouse * ratio - line.pos;
-                        return;
+                    mouse = e.clientY - canvas.getBoundingClientRect().top;
+                    for (let line of yLines) {
+                        if (Math.abs(mouse * ratio - line.pos) < 10) {
+                            selectedLine = line;
+                            offset = mouse * ratio - line.pos;
+                            return;
+                        }
                     }
-                }
+                });
             });
 
-            canvas.addEventListener('mousemove', (e) => {
-                if (selectedLine) {
-                    if(selectedLine.x) {
-                        let mouse = e.clientX - canvas.getBoundingClientRect().left;
-                        selectedLine.pos = parseInt(Math.max(canvas.width * 0.02, Math.min(canvas.width * 0.98, mouse * ratio - offset)));
-                        drawLines();
-                    } else if (selectedLine.pos) {
-                        let mouse = e.clientY - canvas.getBoundingClientRect().top;
-                        selectedLine.pos = parseInt(Math.max(canvas.height * 0.02, Math.min(canvas.height * 0.98, mouse * ratio - offset)));
-                        drawLines();
+            ['mousemove', 'touchmove'].forEach(ev => {
+                canvas.addEventListener(ev, e => {
+                    e.preventDefault();
+                    if (selectedLine) {
+                        if (selectedLine.x) {
+                            let mouse = e.clientX - canvas.getBoundingClientRect().left;
+                            selectedLine.pos = parseInt(Math.max(canvas.width * 0.02, Math.min(canvas.width * 0.98, mouse * ratio - offset)));
+                            drawLines();
+                        } else if (selectedLine.pos) {
+                            let mouse = e.clientY - canvas.getBoundingClientRect().top;
+                            selectedLine.pos = parseInt(Math.max(canvas.height * 0.02, Math.min(canvas.height * 0.98, mouse * ratio - offset)));
+                            drawLines();
+                        }
                     }
-                }
+                });
             });
+
+            ['mouseup', 'mouseleave', 'mouseout', 'touchend', 'touchcancel'].forEach(ev => canvas.addEventListener(ev, () => selectedLine = null));
             
             function moveLine(line, button) {
                 if (button.getAttribute('btn-dir') === 'up') line.pos -= lineMoveSpeed;
@@ -156,10 +164,6 @@ function displayImage() {
                     });
                 });
                 ['mouseup', 'mouseleave', 'mouseout', 'touchend', 'touchcancel'].forEach(e => btn.addEventListener(e, () => clearInterval(holdInterval)));
-            })
-
-            canvas.addEventListener('mouseup', () => {
-                selectedLine = null;
             });
 
             drawLines();
