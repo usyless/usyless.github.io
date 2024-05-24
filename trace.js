@@ -133,7 +133,6 @@ function displayImage() {
             document.querySelectorAll("button[move='true']").forEach(btn => {
                 ['mousedown', 'touchstart'].forEach(ev => {
                     btn.addEventListener(ev, e => {
-                        e.preventDefault();
                         holdInterval = setInterval(() => {
                             switch (e.target.getAttribute('btn-name')) {
                                 case 'spltop': {
