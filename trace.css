@@ -128,3 +128,7 @@ input[type="number"]:focus {
 .crosshair_hover {
     cursor: crosshair;
 }
+
+.moveButtons button {
+    width: 50px;
+}

@@ -5,6 +5,8 @@ const trace_ctx = trace_canvas.getContext('2d');
 
 const all_canvases = document.querySelectorAll("canvas");
 
+let lineMoveSpeed = parseInt(document.getElementById("moveSpeed").value);
+
 document.querySelector("div[class*='divButton']").addEventListener("click", () => document.getElementById("imageInput").click());
 document.getElementById("restoreDefault").addEventListener("click", () => restoreDefault());
 document.querySelectorAll("button[class='disableme']").forEach(b => b.disabled = true);
@@ -18,7 +20,8 @@ const defaults = {
     "lowFRExport": 20,
     "highFRExport": 20000,
     "exportSPLPrecision": 3,
-    "exportFRPrecision": 5
+    "exportFRPrecision": 5,
+    "moveSpeed": 2
 }
 
 let worker;
@@ -49,12 +52,12 @@ function displayImage() {
             const canvas = document.getElementById('lineCanvas');
             const context = canvas.getContext('2d');
             xLines = [
-                {x: canvas.width * 0.1, type: "Low"},
-                {x: canvas.width * 0.9, type: "High"}
+                {pos: canvas.width * 0.1, type: "Low", x: "hello"},
+                {pos: canvas.width * 0.9, type: "High", x: "hello"}
             ];
             yLines = [
-                {y: canvas.height * 0.1, type: "High"},
-                {y: canvas.height * 0.9, type: "Low"}
+                {pos: canvas.height * 0.1, type: "High"},
+                {pos: canvas.height * 0.9, type: "Low"}
             ];
 
             function drawLines() {
@@ -64,18 +67,18 @@ function displayImage() {
                 xLines.forEach(line => {
                     context.strokeStyle = 'green';
                     context.beginPath();
-                    context.moveTo(line.x, 0);
-                    context.lineTo(line.x, canvas.height);
+                    context.moveTo(line.pos, 0);
+                    context.lineTo(line.pos, canvas.height);
                     context.stroke();
-                    context.fillText(line.type, line.x + 5, canvas.height * 0.5);
+                    context.fillText(line.type, line.pos + 5, canvas.height * 0.5);
                 });
                 yLines.forEach(line => {
                     context.strokeStyle = 'blue';
                     context.beginPath();
-                    context.moveTo(0, line.y);
-                    context.lineTo(canvas.width, line.y);
+                    context.moveTo(0, line.pos);
+                    context.lineTo(canvas.width, line.pos);
                     context.stroke();
-                    context.fillText(line.type, canvas.width * 0.5, line.y - 5);
+                    context.fillText(line.type, canvas.width * 0.5, line.pos - 5);
                 });
             }
 
@@ -88,18 +91,18 @@ function displayImage() {
                 ratio = img.naturalWidth / img.clientWidth;
 
                 for (let line of xLines) {
-                    if (Math.abs(mouse * ratio - line.x) < 10) {
+                    if (Math.abs(mouse * ratio - line.pos) < 10) {
                         selectedLine = line;
-                        offset = mouse * ratio - line.x;
+                        offset = mouse * ratio - line.pos;
                         return;
                     }
                 }
 
                 mouse = e.clientY - canvas.getBoundingClientRect().top;
                 for (let line of yLines) {
-                    if (Math.abs(mouse * ratio - line.y) < 10) {
+                    if (Math.abs(mouse * ratio - line.pos) < 10) {
                         selectedLine = line;
-                        offset = mouse * ratio - line.y;
+                        offset = mouse * ratio - line.pos;
                         return;
                     }
                 }
@@ -109,15 +112,50 @@ function displayImage() {
                 if (selectedLine) {
                     if(selectedLine.x) {
                         let mouse = e.clientX - canvas.getBoundingClientRect().left;
-                        selectedLine.x = parseInt(Math.max(canvas.width * 0.02, Math.min(canvas.width * 0.98, mouse * ratio - offset)));
+                        selectedLine.pos = parseInt(Math.max(canvas.width * 0.02, Math.min(canvas.width * 0.98, mouse * ratio - offset)));
                         drawLines();
-                    } else if (selectedLine.y) {
+                    } else if (selectedLine.pos) {
                         let mouse = e.clientY - canvas.getBoundingClientRect().top;
-                        selectedLine.y = parseInt(Math.max(canvas.height * 0.02, Math.min(canvas.height * 0.98, mouse * ratio - offset)));
+                        selectedLine.pos = parseInt(Math.max(canvas.height * 0.02, Math.min(canvas.height * 0.98, mouse * ratio - offset)));
                         drawLines();
                     }
                 }
             });
+            
+            function moveLine(line, button) {
+                if (button.getAttribute('btn-dir') === 'up') line.pos -= lineMoveSpeed;
+                else line.pos += lineMoveSpeed;
+                drawLines();
+            }
+
+            let holdInterval;
+
+            document.querySelectorAll("button[move='true']").forEach(btn => {
+                btn.addEventListener('mousedown', (e) => {
+                    holdInterval = setInterval(() => {
+                        switch (e.target.getAttribute('btn-name')) {
+                            case 'spltop': {
+                                moveLine(yLines[0], e.target);
+                                break;
+                            }
+                            case 'splbot': {
+                                moveLine(yLines[1], e.target);
+                                break;
+                            }
+                            case 'frtop': {
+                                moveLine(xLines[1], e.target);
+                                break;
+                            }
+                            case 'frbot': {
+                                moveLine(xLines[0], e.target);
+                                break;
+                            }
+                        }
+                    }, 50);
+                });
+                btn.addEventListener('mouseup', () => clearInterval(holdInterval));
+                btn.addEventListener('mouseleave', () => clearInterval(holdInterval));
+            })
 
             canvas.addEventListener('mouseup', () => {
                 selectedLine = null;
@@ -267,10 +305,10 @@ function exportTrace() {
     }
 
     worker.postMessage(["export",
-        [SPLTop, parseInt(yLines[0].y)],
-        [SPLBot, parseInt(yLines[1].y)],
-        [FRTop, parseInt(xLines[1].x)],
-        [FRBot, parseInt(xLines[0].x)],
+        [SPLTop, parseInt(yLines[0].pos)],
+        [SPLBot, parseInt(yLines[1].pos)],
+        [FRTop, parseInt(xLines[1].pos)],
+        [FRBot, parseInt(xLines[0].pos)],
         document.getElementById("lowFRExport").value,
         document.getElementById("highFRExport").value,
         document.getElementById("exportFRPrecision").value,
@@ -292,8 +330,8 @@ function download(data) {
     }, 0);
 }
 
-function minVal(e, val) {
-    if (e.value < val) e.value = val;
+function minVal(e) {
+    if (e.value < e.min) e.value = e.min;
 }
 
 function undo() {
@@ -309,4 +347,8 @@ function restoreDefault() {
         document.getElementById(val).value = defaults[val];
     }
     updateLine();
+}
+
+function updateLineMoveSpeed() {
+    lineMoveSpeed = parseInt(document.getElementById("moveSpeed").value);
 }

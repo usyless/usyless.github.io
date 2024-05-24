@@ -33,20 +33,48 @@
     </div>
     <div class="sidebarSection">
         <div>
-            <label for="SPLTop">Higher SPL (dB): </label>
-            <input type="number" id="SPLTop"/>
+            <div>
+                <label for="SPLTop">Higher SPL (dB): </label>
+                <input type="number" id="SPLTop"/>
+            </div>
+            <div class="moveButtons">
+                <button move="true" btn-name="spltop" btn-dir="down" class="disableme">▼</button>
+                <button move="true" btn-name="spltop" btn-dir="up" class="disableme">▲</button>
+            </div>
         </div>
         <div>
-            <label for="SPLBot">Lower SPL (dB): </label>
-            <input type="number" id="SPLBot"/>
+            <div>
+                <label for="SPLBot">Lower SPL (dB): </label>
+                <input type="number" id="SPLBot"/>
+            </div>
+            <div class="moveButtons">
+                <button move="true" btn-name="splbot" btn-dir="down" class="disableme">▼</button>
+                <button move="true" btn-name="splbot" btn-dir="up" class="disableme">▲</button>
+            </div>
         </div>
         <div>
-            <label for="FRTop">Higher Frequency (Hz): </label>
-            <input type="number" id="FRTop"/>
+            <div>
+                <label for="FRTop">Higher Frequency (Hz): </label>
+                <input type="number" id="FRTop"/>
+            </div>
+            <div class="moveButtons">
+                <button move="true" btn-name="frtop" btn-dir="up" class="disableme">◀</button>
+                <button move="true" btn-name="frtop" btn-dir="down" class="disableme">▶</button>
+            </div>
         </div>
         <div>
-            <label for="FRBot">Lower Frequency (Hz): </label>
-            <input type="number" id="FRBot" onchange="minVal(this, 0)"/>
+            <div>
+                <label for="FRBot">Lower Frequency (Hz): </label>
+                <input type="number" id="FRBot" min="0" onchange="minVal(this)"/>
+            </div>
+            <div class="moveButtons">
+                <button move="true" btn-name="frbot" btn-dir="up" class="disableme">◀</button>
+                <button move="true" btn-name="frbot" btn-dir="down" class="disableme">▶</button>
+            </div>
+        </div>
+        <div>
+            <label for="moveSpeed">Line Move Speed: </label>
+            <input type="number" id="moveSpeed" min="1" value="2" onchange="updateLineMoveSpeed(); minVal(this)"/>
         </div>
     </div>
     <div class="sidebarSection">
@@ -55,15 +83,15 @@
         </div>
         <div>
             <label for="tolerance">Colour Tolerance: </label>
-            <input type="number" id="tolerance" min="1" onchange="minVal(this, 1)" value="50"/>
+            <input type="number" id="tolerance" min="1" onchange="minVal(this)" value="50"/>
         </div>
         <div>
             <label for="maxLineHeight">Max Line Thickness: </label>
-            <input type="number" id="maxLineHeight" min="1" onchange="minVal(this, 1)" value="25"/>
+            <input type="number" id="maxLineHeight" min="1" onchange="minVal(this)" value="25"/>
         </div>
         <div>
             <label for="maxJump">Largest Contiguous Jump: </label>
-            <input type="number" id="maxJump" min="1" onchange="minVal(this, 1)" value="15"/>
+            <input type="number" id="maxJump" min="1" onchange="minVal(this)" value="15"/>
         </div>
     </div>
     <div class="sidebarSection">
@@ -72,7 +100,7 @@
         </div>
         <div>
             <label for="lowFRExport">Minimum Frequency (Hz): </label>
-            <input type="number" id="lowFRExport" value="20" onchange="minVal(this, 0)"/>
+            <input type="number" id="lowFRExport" min="1" value="20" onchange="minVal(this)"/>
         </div>
         <div>
             <label for="highFRExport">Maximum Frequency (Hz): </label>
@@ -97,7 +125,7 @@
         </div>
         <div>
             <label for="lineThickness">Trace Line Thickness: </label>
-            <input type="number" id="lineThickness" min="1" onchange="minVal(this, 1); updateLine()" value="3"/>
+            <input type="number" id="lineThickness" min="1" onchange="minVal(this); updateLine()" value="3"/>
         </div>
     </div>
     <div class="divButton sidebarSection" id="restoreDefault">
