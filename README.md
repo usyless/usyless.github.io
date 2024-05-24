@@ -1,4 +1,4 @@
-# Usy's Online Frequency Response Tracer
+# usy's Online Frequency Response Tracer
 
 - All Processing is done on device and no analytics are performed. 
 - #### Feel free to contribute or suggest changes
