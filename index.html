@@ -13,13 +13,13 @@
     <div>
         <h1>FR Trace</h1>
     </div>
-    <div class="divButton sidebarSection">
+    <div class="divButton sidebarSection" id="imageInputDiv">
         <input type='file' id='imageInput' class="hidden" onchange='displayImage()' accept="image/*"/>
         <label>Choose Image</label>
     </div>
     <div class="sidebarSection">
         <div>
-            <button onclick="switchState(this)" id="pth" class="disableme">Select Path</button>
+            <button id="pth" class="disableme">Select Path</button>
         </div>
         <div>
             <button onclick="clearPath()" id="clearPath" class="disableme">Clear Path</button>
@@ -86,12 +86,12 @@
             <input type="number" id="tolerance" min="1" onchange="minVal(this)" value="50"/>
         </div>
         <div>
-            <label for="maxLineHeight">Max Line Thickness: </label>
-            <input type="number" id="maxLineHeight" min="1" onchange="minVal(this)" value="25"/>
+            <label for="maxLineHeight">Max Line Thickness Offset: </label>
+            <input type="number" id="maxLineHeight" value="0"/>
         </div>
         <div>
-            <label for="maxJump">Largest Contiguous Jump: </label>
-            <input type="number" id="maxJump" min="1" onchange="minVal(this)" value="15"/>
+            <label for="maxJump">Largest Contiguous Jump Offset: </label>
+            <input type="number" id="maxJump" value="0"/>
         </div>
     </div>
     <div class="sidebarSection">
@@ -117,15 +117,11 @@
     </div>
     <div class="sidebarSection">
         <div>
-            <h3>Visual Settings</h3>
+            <h3>Extras</h3>
         </div>
         <div>
             <label for="lineColour">Trace Line Colour: </label>
             <input type="color" id="lineColour" onchange="updateLine()" value="#ff0000"/>
-        </div>
-        <div>
-            <label for="lineThickness">Trace Line Thickness: </label>
-            <input type="number" id="lineThickness" min="1" onchange="minVal(this); updateLine()" value="3"/>
         </div>
     </div>
     <div class="divButton sidebarSection" id="restoreDefault">

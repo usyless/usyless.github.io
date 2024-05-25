@@ -1,4 +1,6 @@
-let state = "Initial";
+const state = State();
+
+document.getElementById('pth').addEventListener('click', () => state.toggleSelect());
 
 const trace_canvas = document.getElementById('traceCanvas');
 const trace_ctx = trace_canvas.getContext('2d');
@@ -7,16 +9,15 @@ const all_canvases = document.querySelectorAll("canvas");
 
 let lineMoveSpeed = parseInt(document.getElementById("moveSpeed").value);
 
-document.querySelector("div[class*='divButton']").addEventListener("click", () => document.getElementById("imageInput").click());
+document.getElementById("imageInputDiv").addEventListener("click", () => document.getElementById("imageInput").click());
 document.getElementById("restoreDefault").addEventListener("click", () => restoreDefault());
 document.querySelectorAll("button[class='disableme']").forEach(b => b.disabled = true);
 
 const defaults = {
     "tolerance": 50,
-    "maxLineHeight": 25,
-    "maxJump": 15,
+    "maxLineHeight": 0,
+    "maxJump": 0,
     "lineColour": "#ff0000",
-    "lineThickness": 3,
     "lowFRExport": 20,
     "highFRExport": 20000,
     "exportSPLPrecision": 3,
@@ -30,18 +31,102 @@ let newImage = true;
 
 let xLines, yLines;
 
+function State() {
+    const States = {
+        initial: "initial",
+        imageLoaded: "imageLoaded",
+        selecting: "selecting",
+        tracing: "tracing"
+    }
+
+    class State {
+        state = States.initial;
+        e = document.getElementById("pth");
+        image = document.getElementById('uploadedImage');
+        canvas = document.getElementById('lineCanvas');
+        imagePicker = document.querySelector("div[class*='divButton']");
+
+        updateState(newState) {
+            this.state = newState;
+        }
+
+        checkState(states) {
+            for (let s of [...[states]]) if (s === this.state) return true;
+            return false;
+        }
+
+        toggleSelect() {
+            if (this.checkState(States.imageLoaded)) this.select();
+            else if (this.checkState(States.selecting)) this.stopSelecting();
+        }
+
+        imageLoaded() {
+            if (this.checkState(States.initial)) {
+                document.querySelectorAll("[temp_thing='true']").forEach(e => e.remove());
+                document.querySelectorAll("button[class='disableme']").forEach(b => b.disabled = false);
+                this.updateState(States.imageLoaded);
+            }
+        }
+
+        select() {
+            if (this.checkState(States.imageLoaded)) {
+                this.image.classList.add("crosshair_hover");
+                this.image.classList.remove("removePointerEvents");
+                this.canvas.classList.add("removePointerEvents");
+                this.canvas.style.display = "none";
+                this.e.innerText = "Stop Selecting";
+                this.updateState(States.selecting);
+            }
+        }
+
+        stopSelecting() {
+            if (this.checkState(States.selecting)) {
+                this.image.classList.remove("crosshair_hover");
+                this.image.classList.add("removePointerEvents");
+                this.canvas.classList.remove("removePointerEvents");
+                this.canvas.style.display = "block";
+                this.e.innerText = "Select Path";
+                this.updateState(States.imageLoaded);
+            }
+        }
+
+        trace() {
+            if (this.checkState(States.selecting)) {
+                this.imagePicker.removeEventListener("click", () => document.getElementById("imageInput").click());
+                this.imagePicker.classList.add("disabled");
+                this.image.classList.remove("crosshair_hover");
+                this.image.classList.add("removePointerEvents");
+                this.e.innerText = "Tracing in progress";
+                this.e.disabled = true;
+                this.updateState(States.tracing);
+            }
+        }
+
+        stopTracing() {
+            if (this.checkState(States.tracing)) {
+                this.imagePicker.removeEventListener("click", () => document.getElementById("imageInput").click());
+                this.imagePicker.classList.remove("disabled");
+                this.image.classList.add("crosshair_hover");
+                this.image.classList.remove("removePointerEvents");
+                this.e.disabled = false;
+                this.e.innerText = "Stop Selecting";
+                this.updateState(States.selecting);
+            }
+        }
+    }
+    return new State();
+}
+
 function displayImage() {
     newImage = true;
-    if (state === "Selecting") switchState();
+    state.stopSelecting();
     clearPath();
-    let input = document.getElementById('imageInput');
-    let img = document.getElementById('uploadedImage');
+    const input = document.getElementById('imageInput');
+    const img = document.getElementById('uploadedImage');
 
     img.src = URL.createObjectURL(input.files[0]);
-    img.onload = () => {
-        document.querySelectorAll("[temp_thing='true']").forEach(e => e.remove());
-        document.querySelectorAll("button[class='disableme']").forEach(b => b.disabled = false);
-        state = "ImageLoaded";
+    img.addEventListener('load', () => {
+        state.imageLoaded();
 
         all_canvases.forEach(canvas => {
             canvas.width = img.naturalWidth;
@@ -62,11 +147,15 @@ function displayImage() {
 
             function drawLines() {
                 context.clearRect(0, 0, canvas.width, canvas.height);
-                context.font = "16px arial"
+                let ratio = trace_canvas.width/trace_canvas.clientWidth;
+                context.font = `${1.3 * ratio}rem arial`
+                context.fillStyle = '#ff0000';
+                context.lineWidth = ratio;
 
                 xLines.forEach(line => {
                     context.strokeStyle = 'green';
                     context.beginPath();
+                    line.pos = Math.floor(Math.max(canvas.width * 0.02, Math.min(canvas.width * 0.98, line.pos)));
                     context.moveTo(line.pos, 0);
                     context.lineTo(line.pos, canvas.height);
                     context.stroke();
@@ -75,6 +164,7 @@ function displayImage() {
                 yLines.forEach(line => {
                     context.strokeStyle = 'blue';
                     context.beginPath();
+                    line.pos = Math.floor(Math.max(canvas.height * 0.02, Math.min(canvas.height * 0.98, line.pos)));
                     context.moveTo(0, line.pos);
                     context.lineTo(canvas.width, line.pos);
                     context.stroke();
@@ -82,12 +172,15 @@ function displayImage() {
                 });
             }
 
+            window.addEventListener('resize', drawLines);
+
             let selectedLine = null;
             let offset = 0;
             let ratio = 1;
 
-            ['mousedown'].forEach(ev => {
+            ['mousedown', 'touchstart'].forEach(ev => {
                 canvas.addEventListener(ev, e => {
+                    e.preventDefault();
                     let mouse = e.clientX - canvas.getBoundingClientRect().left;
                     ratio = img.naturalWidth / img.clientWidth;
 
@@ -110,23 +203,28 @@ function displayImage() {
                 });
             });
 
-            ['mousemove'].forEach(ev => {
+            ['mousemove', 'touchmove'].forEach(ev => {
                 canvas.addEventListener(ev, e => {
+                    e.preventDefault();
                     if (selectedLine) {
+                        let rect = canvas.getBoundingClientRect();
                         if (selectedLine.x) {
-                            let mouse = e.clientX - canvas.getBoundingClientRect().left;
-                            selectedLine.pos = parseInt(Math.max(canvas.width * 0.02, Math.min(canvas.width * 0.98, mouse * ratio - offset)));
+                            let mouse = e.clientX - rect.left;
+                            selectedLine.pos = Math.floor(mouse * ratio - offset);
                             drawLines();
                         } else if (selectedLine.pos) {
-                            let mouse = e.clientY - canvas.getBoundingClientRect().top;
-                            selectedLine.pos = parseInt(Math.max(canvas.height * 0.02, Math.min(canvas.height * 0.98, mouse * ratio - offset)));
+                            let mouse = e.clientY - rect.top;
+                            selectedLine.pos = Math.floor(mouse * ratio - offset);
                             drawLines();
                         }
                     }
                 });
             });
 
-            ['mouseup', 'mouseleave', 'mouseout'].forEach(ev => canvas.addEventListener(ev, () => selectedLine = null));
+            ['mouseup', 'mouseleave', 'mouseout', 'touchend', 'touchcancel'].forEach(ev => canvas.addEventListener(ev, e => {
+                e.preventDefault();
+                selectedLine = null;
+            }));
             
             function moveLine(line, button) {
                 if (button.getAttribute('btn-dir') === 'up') line.pos -= lineMoveSpeed;
@@ -162,118 +260,66 @@ function displayImage() {
                         }, 50);
                     });
                 });
-                ['mouseup', 'mouseleave', 'mouseout', 'touchend', 'touchcancel'].forEach(e => btn.addEventListener(e, () => clearInterval(holdInterval)));
+                ['mouseup', 'mouseleave', 'mouseout', 'touchend', 'touchcancel'].forEach(ev => btn.addEventListener(ev, e => {
+                    e.preventDefault();
+                    clearInterval(holdInterval);
+                }));
             });
 
             drawLines();
         }
 
-        img.onclick = (e) => {
-            if (state === "Selecting") {
-                const rect = img.getBoundingClientRect();
-                let x = e.clientX - rect.left;
-                let y = e.clientY - rect.top;
+        img.addEventListener('click', e => {
+            const rect = img.getBoundingClientRect();
+            let x = e.clientX - rect.left;
+            let y = e.clientY - rect.top;
 
-                const ratio = img.naturalWidth / img.clientWidth;
-                x *= ratio;
-                y *= ratio;
+            const ratio = img.naturalWidth / img.clientWidth;
+            x *= ratio;
+            y *= ratio;
 
-                let imageData = null;
-                if (newImage) {
-                    const processing_canvas = document.createElement("canvas");
+            let imageData = null;
+            if (newImage) {
+                const processing_canvas = document.createElement("canvas");
 
-                    const processing_context = processing_canvas.getContext('2d');
-                    processing_canvas.width = img.naturalWidth;
-                    processing_canvas.height = img.naturalHeight;
+                const processing_context = processing_canvas.getContext('2d');
+                processing_canvas.width = img.naturalWidth;
+                processing_canvas.height = img.naturalHeight;
 
-                    const image = new Image;
-                    image.src = img.src;
-                    processing_context.drawImage(image, 0, 0);
+                const image = new Image;
+                image.src = img.src;
+                processing_context.drawImage(image, 0, 0);
 
-                    imageData = processing_context.getImageData(0, 0, image.width, image.height);
-                    newImage = false;
-                }
+                imageData = processing_context.getImageData(0, 0, image.width, image.height);
+                newImage = false;
+            }
 
-                if (!worker) {
-                    clearPath();
-                    worker = new Worker("./worker.js");
-                    worker.onmessage = (e) => {
-                        if (e.data[0] === "done") {
-                            const traceData = e.data[1];
-                            const first = traceData.entries().next().value;
-                            beginPlot(first[0], first[1]);
-                            traceData.forEach((y, x) => plotLine(x, y));
-                            state = "TracingDone";
-                            switchState();
-                        } else {
-                            download(e.data[1]);
-                        }
+            if (!worker) {
+                clearPath();
+                worker = new Worker("./worker.js");
+                worker.onmessage = (e) => {
+                    if (e.data[0] === "done") {
+                        const traceData = e.data[1];
+                        const first = traceData.entries().next().value;
+                        beginPlot(first[0], first[1]);
+                        traceData.forEach((y, x) => plotLine(x, y));
+                        state.stopTracing();
+                    } else {
+                        download(e.data[1]);
                     }
                 }
-
-                worker.postMessage([
-                    imageData, x, y,
-                    document.getElementById("maxLineHeight").value,
-                    document.getElementById("tolerance").value,
-                    document.getElementById("maxJump").value,
-                ]);
-
-                state = "Tracing";
-                switchState();
             }
-        }
-    }
-}
 
-function switchState(e) {
-    if (!e) e = document.getElementById("pth");
-    switch (state) {
-        case "ImageLoaded": { // switch to selecting state
-            const image = document.getElementById('uploadedImage');
-            image.classList.add("crosshair_hover");
-            image.classList.remove("removePointerEvents");
-            const canvas = document.getElementById('lineCanvas');
-            canvas.classList.add("removePointerEvents");
-            canvas.style.display = "none";
-            state = "Selecting";
-            e.innerText = "Stop Selecting";
-            break;
-        }
-        case "Selecting": { // switch to image loaded state
-            const image = document.getElementById('uploadedImage');
-            image.classList.remove("crosshair_hover");
-            image.classList.add("removePointerEvents");
-            const canvas = document.getElementById('lineCanvas');
-            canvas.classList.remove("removePointerEvents");
-            canvas.style.display = "block";
-            state = "ImageLoaded";
-            e.innerText = "Select Path";
-            break;
-        }
-        case "Tracing": {
-            const imagePicker = document.querySelector("div[class*='divButton']");
-            imagePicker.removeEventListener("click", () => document.getElementById("imageInput").click());
-            imagePicker.classList.add("disabled");
-            const image = document.getElementById('uploadedImage');
-            image.classList.remove("crosshair_hover");
-            image.classList.add("removePointerEvents");
-            e.innerText = "Tracing in progress";
-            e.disabled = true;
-            break;
-        }
-        case "TracingDone": {
-            const imagePicker = document.querySelector("div[class*='divButton']");
-            imagePicker.removeEventListener("click", () => document.getElementById("imageInput").click());
-            imagePicker.classList.remove("disabled");
-            const image = document.getElementById('uploadedImage');
-            image.classList.add("crosshair_hover");
-            image.classList.remove("removePointerEvents");
-            e.disabled = false;
-            e.innerText = "Stop Selecting";
-            state = "Selecting";
-            break;
-        }
-    }
+            worker.postMessage([
+                imageData, x, y,
+                document.getElementById("maxLineHeight").value,
+                document.getElementById("tolerance").value,
+                document.getElementById("maxJump").value,
+            ]);
+
+            state.trace();
+        });
+    });
 }
 
 function beginPlot(beginX, beginY) {
@@ -284,7 +330,7 @@ function beginPlot(beginX, beginY) {
 
 function plotLine(toX, toY) {
     trace_ctx.strokeStyle = document.getElementById("lineColour").value;
-    trace_ctx.lineWidth = document.getElementById("lineThickness").value;
+    trace_ctx.lineWidth = trace_canvas.height * 0.004;
     trace_ctx.lineTo(toX, toY);
     trace_ctx.stroke();
 }

@@ -59,13 +59,14 @@ onmessage = (e) => {
             break;
         }
         default: {
+            // TODO: colour is running average
             previousTrace = new Map(JSON.parse(JSON.stringify(Array.from(currentTrace))));
             if (e.data[0]) imageData = e.data[0];
             const x = parseInt(e.data[1]);
             const y = parseInt(e.data[2]);
-            const maxLineHeight = parseInt(e.data[3]);
+            const maxLineHeight = Math.max(0, Math.floor(imageData.height * 0.05) + parseIntDefault(e.data[3], 0));
             const tolerance = parseInt(e.data[4]);
-            const maxJump = parseInt(e.data[5]);
+            const maxJump = Math.max(0, Math.floor(imageData.width * 0.02)) + parseIntDefault(e.data[5], 0);
 
             const colour = new RGB(x, y, tolerance);
 
@@ -112,11 +113,11 @@ class RGB {
     }
 
     withinTolerance(x, y) {
-        let [newR, newG, newB] = RGB.getRGB(x, y);
-        let rmean = (this.R + newR) / 2;
-        let r = this.R - newR;
-        let g = this.G - newG;
-        let b = this.B - newB;
+        const [newR, newG, newB] = RGB.getRGB(x, y);
+        const rmean = (this.R + newR) / 2;
+        const r = this.R - newR;
+        const g = this.G - newG;
+        const b = this.B - newB;
         return Math.sqrt((((512+rmean)*r*r)>>8) + 4*g*g + (((767-rmean)*b*b)>>8)) <= this.tolerance;
     }
 
@@ -159,4 +160,10 @@ function cleanUpData(data) {
         }
     }
     simplifiedTrace.set(finalKey, finalValue);
+}
+
+function parseIntDefault(a, def) {
+    let i = parseInt(a);
+    if (i) return i;
+    return def;
 }

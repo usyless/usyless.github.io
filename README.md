@@ -22,12 +22,12 @@
 ### Colour Tolerance
 - Adjust the maximum tolerance for colours that the tracer takes into account when tracing the line
 - Increase this if your line is not a single colour
-- Decrease this if the tracer is tracing stuff that isn't your line
-### Max Line Thickness
-- Adjust the maximum thickness of the line being traced in pixels
-- Increase this if your line is very jittery
-### Largest Contiguous jump
-- The largest distance in pixels that the tracer will allow as a contiguous line
+- Decrease this if the trace is jittery
+### Max Line Thickness Offset
+- Adjust the offset of the maximum thickness of the line being traced in pixels
+- Decrease this if your trace is jittery
+### Largest Contiguous jump Offset
+- The offset for the largest distance in pixels that the tracer will allow as a contiguous line
 - Increase this to trace lines that have breaks in them, such as target lines
 - Decrease this if the tracer is tracing stuff to the left and right of the line
 
@@ -41,8 +41,6 @@
 ### Frequency Precision
 - With how many decimal places to save Frequency values to
 
-## Visual Settings
+## Extras
 ### Trace Line Colour
 - Colour of the traced line on screen
-### Trace Line Thickness
-- Thickness of the traced line on screen
