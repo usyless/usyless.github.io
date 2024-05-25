@@ -60,6 +60,7 @@ onmessage = (e) => {
         }
         default: {
             // TODO: colour is running average
+            // TODO: octave smoothing
             previousTrace = new Map(JSON.parse(JSON.stringify(Array.from(currentTrace))));
             if (e.data[0]) imageData = e.data[0];
             const x = parseInt(e.data[1]);

@@ -1,17 +1,9 @@
 const state = State();
 
-document.getElementById('pth').addEventListener('click', () => state.toggleSelect());
-
 const trace_canvas = document.getElementById('traceCanvas');
 const trace_ctx = trace_canvas.getContext('2d');
 
 const all_canvases = document.querySelectorAll("canvas");
-
-updateLineMoveSpeed();
-
-document.getElementById("imageInputDiv").addEventListener("click", () => document.getElementById("imageInput").click());
-document.getElementById("restoreDefault").addEventListener("click", () => restoreDefault());
-document.querySelectorAll("button[class='disableme']").forEach(b => b.disabled = true);
 
 const defaults = {
     "tolerance": 50,
@@ -25,11 +17,8 @@ const defaults = {
     "moveSpeed": 2
 }
 
-let worker;
-
-let newImage = true;
-
-let xLines, yLines;
+let worker, lineMoveSpeed, xLines, yLines, newImage = true;
+updateLineMoveSpeed();
 
 function State() {
     const States = {
@@ -44,7 +33,15 @@ function State() {
         e = document.getElementById("pth");
         image = document.getElementById('uploadedImage');
         canvas = document.getElementById('lineCanvas');
-        imagePicker = document.querySelector("div[class*='divButton']");
+        imageInput = document.getElementById("imageInputDiv");
+        imageInputEvent = () => document.getElementById("imageInput").click();
+
+        constructor() {
+            this.imageInput.addEventListener("click", this.imageInputEvent);
+            document.getElementById("restoreDefault").addEventListener("click", () => restoreDefault());
+            document.querySelectorAll("button[class='disableme']").forEach(b => b.disabled = true);
+            this.e.addEventListener('click', () => state.toggleSelect());
+        }
 
         updateState(newState) {
             this.state = newState;
@@ -92,8 +89,9 @@ function State() {
 
         trace() {
             if (this.checkState(States.selecting)) {
-                this.imagePicker.removeEventListener("click", () => document.getElementById("imageInput").click());
-                this.imagePicker.classList.add("disabled");
+                this.imageInput.removeEventListener("click", () => document.getElementById("imageInput").click());
+                this.imageInput.classList.add("disabled");
+                this.imageInput.removeEventListener("click", this.imageInputEvent);
                 this.image.classList.remove("crosshair_hover");
                 this.image.classList.add("removePointerEvents");
                 this.e.innerText = "Tracing in progress";
@@ -104,8 +102,9 @@ function State() {
 
         stopTracing() {
             if (this.checkState(States.tracing)) {
-                this.imagePicker.removeEventListener("click", () => document.getElementById("imageInput").click());
-                this.imagePicker.classList.remove("disabled");
+                this.imageInput.removeEventListener("click", () => document.getElementById("imageInput").click());
+                this.imageInput.classList.remove("disabled");
+                this.imageInput.addEventListener("click", this.imageInputEvent);
                 this.image.classList.add("crosshair_hover");
                 this.image.classList.remove("removePointerEvents");
                 this.e.disabled = false;
