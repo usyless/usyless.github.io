@@ -7,7 +7,7 @@ const trace_ctx = trace_canvas.getContext('2d');
 
 const all_canvases = document.querySelectorAll("canvas");
 
-let lineMoveSpeed = parseInt(document.getElementById("moveSpeed").value);
+updateLineMoveSpeed();
 
 document.getElementById("imageInputDiv").addEventListener("click", () => document.getElementById("imageInput").click());
 document.getElementById("restoreDefault").addEventListener("click", () => restoreDefault());
@@ -178,9 +178,8 @@ function displayImage() {
             let offset = 0;
             let ratio = 1;
 
-            ['mousedown', 'touchstart'].forEach(ev => {
+            ['mousedown'].forEach(ev => {
                 canvas.addEventListener(ev, e => {
-                    e.preventDefault();
                     let mouse = e.clientX - canvas.getBoundingClientRect().left;
                     ratio = img.naturalWidth / img.clientWidth;
 
@@ -203,9 +202,8 @@ function displayImage() {
                 });
             });
 
-            ['mousemove', 'touchmove'].forEach(ev => {
+            ['mousemove'].forEach(ev => {
                 canvas.addEventListener(ev, e => {
-                    e.preventDefault();
                     if (selectedLine) {
                         let rect = canvas.getBoundingClientRect();
                         if (selectedLine.x) {
@@ -221,7 +219,7 @@ function displayImage() {
                 });
             });
 
-            ['mouseup', 'mouseleave', 'mouseout', 'touchend', 'touchcancel'].forEach(ev => canvas.addEventListener(ev, e => {
+            ['mouseup', 'mouseleave', 'mouseout'].forEach(ev => canvas.addEventListener(ev, e => {
                 e.preventDefault();
                 selectedLine = null;
             }));
