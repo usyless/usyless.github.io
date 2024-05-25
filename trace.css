@@ -6,6 +6,10 @@ body, html {
     font-family: Calibri, Candara, Segoe, Segoe UI, Optima, Arial, sans-serif;
 }
 
+* {
+    user-select: none;
+}
+
 a {
     color: #b6b6b6;
 }
@@ -21,7 +25,6 @@ button {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
-    user-select: none;
 }
 
 button:hover, .divButton:hover {
