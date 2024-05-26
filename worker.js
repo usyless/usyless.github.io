@@ -130,7 +130,7 @@ class RGB {
 }
 
 class exportString {
-    data = `* Exported with UsyTrace available at https://usyless.github.io/
+    data = `* Exported with UsyTrace, available at https://usyless.github.io/
 Freq(Hz) SPL(dB)`
     addData(freq, spl) {
         this.data += `
