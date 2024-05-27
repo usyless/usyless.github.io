@@ -111,6 +111,10 @@ input[type="number"]:focus {
     flex-direction: column;
 }
 
+#finalNonMove {
+    align-items: center;
+}
+
 #main-content {
     flex: 2;
     display: flex;
