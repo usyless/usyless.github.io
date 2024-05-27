@@ -435,9 +435,11 @@ function createWorker() {
         worker.onmessage = (e) => {
             if (e.data[0] === "done") {
                 const traceData = e.data[1];
-                const first = traceData.entries().next().value;
-                beginPlot(first[0], first[1]);
-                traceData.forEach((y, x) => plotLine(x, y));
+                if (traceData.size > 1) {
+                    const first = traceData.entries().next().value;
+                    beginPlot(first[0], first[1]);
+                    traceData.forEach((y, x) => plotLine(x, y));
+                }
                 state.toggleTrace();
             } else {
                 download(e.data[1]);

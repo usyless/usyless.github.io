@@ -1,7 +1,7 @@
 let imageData;
 let currentTrace = new Map();
 let simplifiedTrace = new Map();
-let previousTrace;
+let previousTrace = new Map();
 
 const funcs = [[(j, z) => j + z, 1], [(j, z) => j - z, 0]]; // the functional parameters go crazy
 let colours = [];
@@ -16,7 +16,7 @@ onmessage = (e) => {
         case "undo": {
             cleanUpData(previousTrace);
             postMessage(["done", simplifiedTrace]);
-            currentTrace = previousTrace;
+            currentTrace = new Map(JSON.parse(JSON.stringify(Array.from(previousTrace))));
             break;
         }
         case "get": {
@@ -59,7 +59,7 @@ onmessage = (e) => {
             break;
         }
         case "point": {
-            previousTrace = new Map(JSON.parse(JSON.stringify(Array.from(currentTrace))));
+            savePreviousTrace();
             currentTrace.set(parseInt(e.data[1]), parseInt(e.data[2]));
             cleanUpData(currentTrace);
             postMessage(["done", simplifiedTrace]);
@@ -72,7 +72,7 @@ onmessage = (e) => {
         case "trace": {
             // TODO: colour is running average
             // TODO: octave smoothing
-            previousTrace = new Map(JSON.parse(JSON.stringify(Array.from(currentTrace))));
+            savePreviousTrace();
             const x = parseInt(e.data[1]);
             const y = parseInt(e.data[2]);
             const maxLineHeight = Math.max(0, Math.floor(imageData.height * 0.05) + parseIntDefault(e.data[3], 0));
@@ -182,4 +182,8 @@ function parseIntDefault(a, def) {
     let i = parseInt(a);
     if (i) return i;
     return def;
+}
+
+function savePreviousTrace() {
+    previousTrace = new Map(JSON.parse(JSON.stringify(Array.from(currentTrace))));
 }
