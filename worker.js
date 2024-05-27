@@ -1,3 +1,5 @@
+'use strict';
+
 let imageData;
 let currentTrace = new Map();
 let simplifiedTrace = new Map();
@@ -134,9 +136,9 @@ class RGB {
 
     addToAverage(x, y) {
         const [newR, newG, newB] = RGB.getRGB(x, y);
-        this.R += Math.max(0, Math.min(255, (Math.sqrt((Math.pow(this.R, 2) + Math.pow(newR, 2)) / 2) - this.R) / this.values));
-        this.G += Math.max(0, Math.min(255, (Math.sqrt((Math.pow(this.G, 2) + Math.pow(newG, 2)) / 2) - this.G) / this.values));
-        this.B += Math.max(0, Math.min(255, (Math.sqrt((Math.pow(this.B, 2) + Math.pow(newB, 2)) / 2) - this.B) / this.values));
+        this.R += (Math.sqrt((Math.pow(this.R, 2) + Math.pow(newR, 2)) / 2) - this.R) / this.values;
+        this.G += (Math.sqrt((Math.pow(this.G, 2) + Math.pow(newG, 2)) / 2) - this.G) / this.values;
+        this.B += (Math.sqrt((Math.pow(this.B, 2) + Math.pow(newB, 2)) / 2) - this.B) / this.values;
         this.values++;
     }
 

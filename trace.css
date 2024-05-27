@@ -9,10 +9,14 @@
 
 body {
     margin: 0;
-    height: 100vh;
-    display: flex;
     background-color: var(--background-primary);
     font-family: Calibri, Candara, Segoe, Segoe UI, Optima, Arial, sans-serif;
+}
+
+#main {
+    height: 100vh;
+    display: flex;
+    transition: opacity 0.3s ease;
 }
 
 * {

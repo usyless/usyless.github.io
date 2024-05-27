@@ -1,3 +1,5 @@
+'use strict';
+
 const state = State();
 
 const trace_canvas = document.getElementById('traceCanvas');
@@ -44,15 +46,36 @@ function State() {
         image = document.getElementById('uploadedImage');
         canvas = document.getElementById('lineCanvas');
         imageInput = document.getElementById("imageInputDiv");
+        fileInput = document.getElementById('imageInput');
+        main = document.getElementById('main');
         imageInputEvent = () => document.getElementById("imageInput").click();
 
         constructor() {
+            this.image.addEventListener('dragstart', (e) => e.preventDefault());
             this.imageInput.addEventListener("click", this.imageInputEvent);
             document.getElementById("restoreDefault").addEventListener("click", () => restoreDefault());
             document.querySelectorAll("button[class='disableme']").forEach(b => b.disabled = true);
 
             this.pathButton.addEventListener('click', () => this.togglePath());
             this.pointButton.addEventListener('click', () => this.togglePoint());
+            this.fileInput.addEventListener('change', () => this.newImage());
+            document.addEventListener('dragover', (e) => {
+                e.preventDefault()
+                this.main.style.opacity = "0.2";
+            });
+            ['dragleave', 'dragend'].forEach(ev => {
+                document.addEventListener(ev, (e) => {
+                    e.preventDefault();
+                    this.main.style.opacity = "1";
+                });
+            });
+            document.addEventListener('drop', (e) => {
+                e.preventDefault();
+                this.main.style.opacity = "1";
+                this.fileInput.files = e.dataTransfer.files;
+                let event = new Event('change');
+                this.fileInput.dispatchEvent(event);
+            });
             this.image.addEventListener('load', () => {
                 document.querySelectorAll("[temp_thing='true']").forEach(e => e.remove());
                 document.querySelectorAll("button[class='disableme']").forEach(b => b.disabled = false);
@@ -332,10 +355,6 @@ function State() {
     return new State();
 }
 
-function displayImage() {
-    state.newImage();
-}
-
 function beginPlot(beginX, beginY) {
     clearPath("lmfao");
     trace_ctx.beginPath();
@@ -378,20 +397,6 @@ function exportTrace() {
         document.getElementById("exportFRPrecision").value,
         document.getElementById("exportSPLPrecision").value
     ]);
-}
-
-function download(data) {
-    let file = new Blob([data], {type: "text/plain;charset=utf-8"});
-    let a = document.createElement("a");
-    let url = URL.createObjectURL(file);
-    a.href = url;
-    a.download = "trace.txt";
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-    }, 0);
 }
 
 function minVal(e) {
@@ -446,7 +451,16 @@ function createWorker() {
                 }
                 state.toggleTrace();
             } else {
-                download(e.data[1]);
+                let a = document.createElement("a");
+                let url = URL.createObjectURL(new Blob([e.data[1]], {type: "text/plain;charset=utf-8"}));
+                a.href = url;
+                a.download = "trace.txt";
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 0);
             }
         }
     }
