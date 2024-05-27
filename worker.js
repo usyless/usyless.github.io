@@ -70,7 +70,6 @@ onmessage = (e) => {
             break;
         }
         case "trace": {
-            // TODO: colour is running average
             // TODO: octave smoothing
             savePreviousTrace();
             const x = parseInt(e.data[1]);
@@ -102,6 +101,7 @@ onmessage = (e) => {
                         colours.sort((a, b) => a - b);
                         j = colours[Math.floor(colours.length / 2)];
                         currentTrace.set(i, j);
+                        colour.addToAverage(i, j);
                         continue;
                     }
                     if (m < maxJump) m++;
@@ -117,6 +117,7 @@ class RGB {
     R;
     G;
     B;
+    values = 1;
     constructor(x, y, tolerance) {
         this.tolerance = tolerance;
         [this.R, this.G, this.B] = RGB.getRGB(x, y);
@@ -129,6 +130,14 @@ class RGB {
         const g = this.G - newG;
         const b = this.B - newB;
         return Math.sqrt((((512+rmean)*r*r)>>8) + 4*g*g + (((767-rmean)*b*b)>>8)) <= this.tolerance;
+    }
+
+    addToAverage(x, y) {
+        const [newR, newG, newB] = RGB.getRGB(x, y);
+        this.R += (Math.sqrt((Math.pow(this.R, 2) + Math.pow(newR, 2)) / 2) - this.R) / this.values;
+        this.G += (Math.sqrt((Math.pow(this.G, 2) + Math.pow(newG, 2)) / 2) - this.G) / this.values;
+        this.B += (Math.sqrt((Math.pow(this.B, 2) + Math.pow(newB, 2)) / 2) - this.B) / this.values;
+        this.values++;
     }
 
     static getRGB(x, y) {
