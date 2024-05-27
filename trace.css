@@ -1,22 +1,31 @@
-body, html {
+:root {
+    --background-primary: #1e1f22;
+    --background-secondary: #2b2d30;
+    --background-tertiary: #3d3f42;
+    --background-quaternary: #4c4d53;
+    --text-primary: #b6b6b6;
+    --disabled: #686868;
+}
+
+body {
     margin: 0;
-    height: 100%;
-    background-color: #1e1f22;
-    color: #b6b6b6;
+    height: 100vh;
+    display: flex;
+    background-color: var(--background-primary);
     font-family: Calibri, Candara, Segoe, Segoe UI, Optima, Arial, sans-serif;
 }
 
 * {
     user-select: none;
+    color: var(--text-primary);
 }
 
-a {
-    color: #b6b6b6;
+label {
+    background: none;
 }
 
 button {
-    background: #1e1f22;
-    color: inherit;
+    background: var(--background-primary);
     border: none;
     padding: 5px 10px;
     border-radius: 10px;
@@ -25,10 +34,11 @@ button {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+    user-select: none;
 }
 
 button:hover, .divButton:hover {
-  background: #3d3f42;
+  background: var(--background-tertiary);
 }
 
 .divButton, .divButton * {
@@ -36,22 +46,18 @@ button:hover, .divButton:hover {
     cursor: pointer;
 }
 
-.divButton label {
-    background: none;
-}
-
 button:active, .divButton:active {
-    background: #4c4d53;
+    background: var(--background-quaternary);
     transition: background 0.1s ease;
 }
 
 button:disabled, .disabled {
-    background: #1e1f22;
-    color: #686868;
+    color: var(--disabled);
 }
 
 button:disabled:hover, .disabled:hover {
     cursor: not-allowed;
+    background: var(--background-primary);
 }
 
 input {
@@ -59,29 +65,29 @@ input {
 }
 
 input[type="number"] {
-    border: 2px solid #3d3f42;
+    border: 2px solid var(--background-tertiary);
     border-radius: 5px;
     color: inherit;
-    background-color: #1e1f22;
+    background-color: var(--background-primary);
     transition: border-color 0.1s ease;
 }
 
 input[type="number"]:hover {
-    border-color: #666;
+    border-color: var(--background-quaternary);
 }
 
 input[type="number"]:focus {
     outline: none;
-    border-color: #666;
+    border-color: var(--background-quaternary);
 }
 
 #sidebar {
-    float: left;
     overflow-y: scroll;
     text-align: center;
     width: 200px;
-    height: 100%;
+    max-width: 200px;
     background-color: #2b2d30;
+    flex: 1;
 }
 
 .sidebarSection {
@@ -101,12 +107,10 @@ input[type="number"]:focus {
 }
 
 #main-content {
-    margin-left: 200px;
+    flex: 2;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    width: calc(100% - 200px);
 }
 
 #inner-content {

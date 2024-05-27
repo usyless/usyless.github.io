@@ -19,13 +19,16 @@
     </div>
     <div class="sidebarSection">
         <div>
-            <button id="pth" class="disableme">Select Path</button>
+            <button id="selectPath" def="Select Path" alt="Stop Selecting" class="disableme">Select Path</button>
         </div>
         <div>
-            <button onclick="clearPath()" id="clearPath" class="disableme">Clear Path</button>
+            <button id="selectPoint" def="Add Point" alt ="Stop Adding Points" class="disableme">Add Point</button>
         </div>
         <div>
-            <button onclick="undo()" id="undo" class="disableme">Undo Latest Trace</button>
+            <button onclick="clearPath()" class="disableme">Clear Path</button>
+        </div>
+        <div>
+            <button onclick="undo()" class="disableme">Undo Latest Trace</button>
         </div>
         <div>
             <button onclick="exportTrace()" id="export" class="disableme">Export Trace</button>
@@ -74,7 +77,7 @@
         </div>
         <div>
             <label for="moveSpeed">Line Move Speed: </label>
-            <input type="number" id="moveSpeed" min="1" value="2" onchange="updateLineMoveSpeed(); minVal(this)"/>
+            <input type="number" id="moveSpeed" min="1" onchange="updateLineMoveSpeed(); minVal(this)"/>
         </div>
     </div>
     <div class="sidebarSection">
@@ -82,16 +85,16 @@
             <h3>Settings</h3>
         </div>
         <div>
-            <label for="tolerance">Colour Tolerance: </label>
-            <input type="number" id="tolerance" min="1" onchange="minVal(this)" value="50"/>
+            <label for="colourTolerance">Colour Tolerance: </label>
+            <input type="number" id="colourTolerance" min="1" onchange="minVal(this)"/>
         </div>
         <div>
-            <label for="maxLineHeight">Max Line Thickness Offset: </label>
-            <input type="number" id="maxLineHeight" value="0"/>
+            <label for="maxLineHeightOffset">Max Line Thickness Offset: </label>
+            <input type="number" id="maxLineHeightOffset"/>
         </div>
         <div>
-            <label for="maxJump">Largest Contiguous Jump Offset: </label>
-            <input type="number" id="maxJump" value="0"/>
+            <label for="maxJumpOffset">Largest Contiguous Jump Offset: </label>
+            <input type="number" id="maxJumpOffset"/>
         </div>
     </div>
     <div class="sidebarSection">
@@ -100,19 +103,19 @@
         </div>
         <div>
             <label for="lowFRExport">Minimum Frequency (Hz): </label>
-            <input type="number" id="lowFRExport" min="1" value="20" onchange="minVal(this)"/>
+            <input type="number" id="lowFRExport" min="1" onchange="minVal(this)"/>
         </div>
         <div>
             <label for="highFRExport">Maximum Frequency (Hz): </label>
-            <input type="number" id="highFRExport" value="20000"/>
+            <input type="number" id="highFRExport"/>
         </div>
         <div>
             <label for="exportSPLPrecision">SPL Precision: </label>
-            <input type="number" id="exportSPLPrecision" value="3"/>
+            <input type="number" id="exportSPLPrecision"/>
         </div>
         <div>
             <label for="exportFRPrecision">Frequency Precision: </label>
-            <input type="number" id="exportFRPrecision" value="5"/>
+            <input type="number" id="exportFRPrecision"/>
         </div>
     </div>
     <div class="sidebarSection">
@@ -121,7 +124,7 @@
         </div>
         <div>
             <label for="lineColour">Trace Line Colour: </label>
-            <input type="color" id="lineColour" onchange="updateLine()" value="#ff0000"/>
+            <input type="color" id="lineColour" onchange="updateLine()"/>
         </div>
     </div>
     <div class="divButton sidebarSection" id="restoreDefault">

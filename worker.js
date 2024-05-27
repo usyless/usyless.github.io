@@ -58,11 +58,21 @@ onmessage = (e) => {
             postMessage(["export", export_string.data]);
             break;
         }
-        default: {
+        case "point": {
+            previousTrace = new Map(JSON.parse(JSON.stringify(Array.from(currentTrace))));
+            currentTrace.set(parseInt(e.data[1]), parseInt(e.data[2]));
+            cleanUpData(currentTrace);
+            postMessage(["done", simplifiedTrace]);
+            break;
+        }
+        case "setData": {
+            imageData = e.data[1];
+            break;
+        }
+        case "trace": {
             // TODO: colour is running average
             // TODO: octave smoothing
             previousTrace = new Map(JSON.parse(JSON.stringify(Array.from(currentTrace))));
-            if (e.data[0]) imageData = e.data[0];
             const x = parseInt(e.data[1]);
             const y = parseInt(e.data[2]);
             const maxLineHeight = Math.max(0, Math.floor(imageData.height * 0.05) + parseIntDefault(e.data[3], 0));
@@ -74,7 +84,6 @@ onmessage = (e) => {
             trace(x, (x) => x >= 0, -1);
             trace(x + 1, (x) => x < imageData.width, 1);
 
-            currentTrace = new Map([...currentTrace.entries()].sort((a, b) => a[0] - b[0]));
             cleanUpData(currentTrace);
             postMessage(["done", simplifiedTrace]);
 
@@ -139,28 +148,34 @@ ${freq.toString()} ${spl.toString()}`
 }
 
 function cleanUpData(data) {
-    simplifiedTrace = new Map();
-    let z, avg, n = data.entries().next().value[0], identity = [], finalKey, finalValue;
-    simplifiedTrace.set(n, data.get(n));
-    for (let i = n + 1; i < imageData.width; i++) {
-        z = data.get(i);
-        if (z) {
-            finalValue = z;
-            identity = [];
-            for (let j = i; data.get(j) === z; j++) {
-                finalKey = j;
-                identity.push(j);
-            }
-            if (identity.length === 1) {
-                simplifiedTrace.set(i, data.get(i));
-            } else {
-                avg = identity.reduce((a, b) => a + b, 0) / identity.length;
-                simplifiedTrace.set(avg, data.get(i));
-                i += identity.length - 1;
+    if (data.size > 2) {
+        data = new Map([...data.entries()].sort((a, b) => a[0] - b[0]));
+        simplifiedTrace = new Map();
+        let z, avg, n = data.entries().next().value[0], identity = [], finalKey, finalValue;
+        simplifiedTrace.set(n, data.get(n));
+        for (let i = n + 1; i < imageData.width; i++) {
+            z = data.get(i);
+            if (z) {
+                finalValue = z;
+                identity = [];
+                for (let j = i; data.get(j) === z; j++) {
+                    finalKey = j;
+                    identity.push(j);
+                }
+                if (identity.length === 1) {
+                    simplifiedTrace.set(i, data.get(i));
+                } else {
+                    avg = identity.reduce((a, b) => a + b, 0) / identity.length;
+                    simplifiedTrace.set(avg, data.get(i));
+                    i += identity.length - 1;
+                }
             }
         }
+        simplifiedTrace.set(finalKey, finalValue);
     }
-    simplifiedTrace.set(finalKey, finalValue);
+    else {
+        simplifiedTrace = data;
+    }
 }
 
 function parseIntDefault(a, def) {
