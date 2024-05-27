@@ -15,7 +15,7 @@ const defaults = {
     "exportSPLPrecision": 3,
     "exportFRPrecision": 5,
 
-    "moveSpeed": 2,
+    "moveSpeedOffset": 0,
 
     "SPLTop": "",
     "SPLBot": "",
@@ -23,8 +23,8 @@ const defaults = {
     "FRBot": ""
 }
 
-let worker, lineMoveSpeed, xLines, yLines, newImage = true, sizeRatio, lineWidth;
-updateLineMoveSpeed();
+let worker, hLineMoveSpeed, vLineMoveSpeed, freqLines, splLines, newImage = true, sizeRatio, lineWidth,
+    firstLoad = true;
 restoreDefault();
 
 function State() {
@@ -63,45 +63,47 @@ function State() {
                 });
                 updateSizeRatio();
                 updateLineWidth();
+                updateLineMoveSpeed();
 
-                {
-                    const canvas = this.canvas;
-                    const context = canvas.getContext('2d');
-                    xLines = [
-                        {pos: canvas.width * 0.1, type: "Low", x: "hello"},
-                        {pos: canvas.width * 0.9, type: "High", x: "hello"}
-                    ];
-                    yLines = [
-                        {pos: canvas.height * 0.1, type: "High"},
-                        {pos: canvas.height * 0.9, type: "Low"}
-                    ];
+                const canvas = this.canvas;
+                const context = canvas.getContext('2d');
+                context.fillStyle = '#ff0000';
 
-                    function drawLines() {
-                        context.clearRect(0, 0, canvas.width, canvas.height);
-                        context.font = `${1.3 * sizeRatio}rem arial`
-                        context.fillStyle = '#ff0000';
-                        context.lineWidth = sizeRatio;
+                freqLines = [
+                    {pos: canvas.width * 0.1, type: "Low", x: "hello"},
+                    {pos: canvas.width * 0.9, type: "High", x: "hello"}
+                ];
+                splLines = [
+                    {pos: canvas.height * 0.1, type: "High"},
+                    {pos: canvas.height * 0.9, type: "Low"}
+                ];
 
-                        xLines.forEach(line => {
-                            context.strokeStyle = 'green';
-                            context.beginPath();
-                            line.pos = Math.floor(Math.max(canvas.width * 0.02, Math.min(canvas.width * 0.98, line.pos)));
-                            context.moveTo(line.pos, 0);
-                            context.lineTo(line.pos, canvas.height);
-                            context.stroke();
-                            context.fillText(line.type, line.pos + 5, canvas.height * 0.5);
-                        });
-                        yLines.forEach(line => {
-                            context.strokeStyle = 'blue';
-                            context.beginPath();
-                            line.pos = Math.floor(Math.max(canvas.height * 0.02, Math.min(canvas.height * 0.98, line.pos)));
-                            context.moveTo(0, line.pos);
-                            context.lineTo(canvas.width, line.pos);
-                            context.stroke();
-                            context.fillText(line.type, canvas.width * 0.5, line.pos - 5);
-                        });
-                    }
+                function drawLines() {
+                    context.clearRect(0, 0, canvas.width, canvas.height);
+                    context.font = `${1.3 * sizeRatio}rem arial`
+                    context.lineWidth = sizeRatio;
 
+                    freqLines.forEach(line => {
+                        context.strokeStyle = 'green';
+                        context.beginPath();
+                        line.pos = Math.floor(Math.max(canvas.width * 0.02, Math.min(canvas.width * 0.98, line.pos)));
+                        context.moveTo(line.pos, 0);
+                        context.lineTo(line.pos, canvas.height);
+                        context.stroke();
+                        context.fillText(line.type, line.pos + 5, canvas.height * 0.5);
+                    });
+                    splLines.forEach(line => {
+                        context.strokeStyle = 'blue';
+                        context.beginPath();
+                        line.pos = Math.floor(Math.max(canvas.height * 0.02, Math.min(canvas.height * 0.98, line.pos)));
+                        context.moveTo(0, line.pos);
+                        context.lineTo(canvas.width, line.pos);
+                        context.stroke();
+                        context.fillText(line.type, canvas.width * 0.5, line.pos - 5);
+                    });
+                }
+
+                if (firstLoad) {
                     window.addEventListener('resize', () => {
                         updateSizeRatio();
                         drawLines();
@@ -115,7 +117,7 @@ function State() {
                         let xTolerance = canvas.width * 0.02;
                         let yTolerance = canvas.height * 0.02;
 
-                        for (let line of xLines) {
+                        for (let line of freqLines) {
                             if (Math.abs(mouse * sizeRatio - line.pos) < xTolerance) {
                                 selectedLine = line;
                                 offset = mouse * sizeRatio - line.pos;
@@ -124,7 +126,7 @@ function State() {
                         }
 
                         mouse = e.clientY - canvas.getBoundingClientRect().top;
-                        for (let line of yLines) {
+                        for (let line of splLines) {
                             if (Math.abs(mouse * sizeRatio - line.pos) < yTolerance) {
                                 selectedLine = line;
                                 offset = mouse * sizeRatio - line.pos;
@@ -154,8 +156,8 @@ function State() {
                     }));
 
                     function moveLine(line, button) {
-                        if (button.getAttribute('btn-dir') === 'up') line.pos -= lineMoveSpeed;
-                        else line.pos += lineMoveSpeed;
+                        if (line.x) line.pos += hLineMoveSpeed * button.getAttribute("dir");
+                        else line.pos += vLineMoveSpeed * button.getAttribute("dir");
                         drawLines();
                     }
 
@@ -168,71 +170,72 @@ function State() {
                                 holdInterval = setInterval(() => {
                                     switch (e.target.getAttribute('btn-name')) {
                                         case 'spltop': {
-                                            moveLine(yLines[0], e.target);
+                                            moveLine(splLines[0], e.target);
                                             break;
                                         }
                                         case 'splbot': {
-                                            moveLine(yLines[1], e.target);
+                                            moveLine(splLines[1], e.target);
                                             break;
                                         }
                                         case 'frtop': {
-                                            moveLine(xLines[1], e.target);
+                                            moveLine(freqLines[1], e.target);
                                             break;
                                         }
                                         case 'frbot': {
-                                            moveLine(xLines[0], e.target);
+                                            moveLine(freqLines[0], e.target);
                                             break;
                                         }
                                     }
                                 }, 50);
                             });
                         });
+
                         ['mouseup', 'mouseleave', 'mouseout', 'touchend', 'touchcancel'].forEach(ev => btn.addEventListener(ev, e => {
                             e.preventDefault();
                             clearInterval(holdInterval);
                         }));
                     });
 
-                    drawLines();
+                    this.image.addEventListener('click', e => {
+                        const rect = this.image.getBoundingClientRect();
+                        let x = e.clientX - rect.left;
+                        let y = e.clientY - rect.top;
+
+                        x *= sizeRatio;
+                        y *= sizeRatio;
+
+                        createWorker();
+
+                        if (newImage) {
+                            const processing_canvas = document.createElement("canvas");
+                            const processing_context = processing_canvas.getContext('2d');
+                            processing_canvas.width = this.image.naturalWidth;
+                            processing_canvas.height = this.image.naturalHeight;
+
+                            const image = new Image;
+                            image.src = this.image.src;
+                            processing_context.drawImage(image, 0, 0);
+
+                            newImage = false;
+                            worker.postMessage(["setData", processing_context.getImageData(0, 0, image.width, image.height)]);
+                        }
+
+                        if (this.checkState(this.States.selectingPath)) {
+                            this.toggleTrace();
+                            worker.postMessage([
+                                "trace", x, y,
+                                document.getElementById("maxLineHeightOffset").value,
+                                document.getElementById("colourTolerance").value,
+                                document.getElementById("maxJumpOffset").value,
+                            ]);
+                        } else {
+                            this.toggleTrace();
+                            worker.postMessage(["point", x, y]);
+                        }
+                    });
+                    firstLoad = false;
                 }
-
-                this.image.addEventListener('click', e => {
-                    const rect = this.image.getBoundingClientRect();
-                    let x = e.clientX - rect.left;
-                    let y = e.clientY - rect.top;
-
-                    x *= sizeRatio;
-                    y *= sizeRatio;
-
-                    createWorker();
-
-                    if (newImage) {
-                        const processing_canvas = document.createElement("canvas");
-                        const processing_context = processing_canvas.getContext('2d');
-                        processing_canvas.width = this.image.naturalWidth;
-                        processing_canvas.height = this.image.naturalHeight;
-
-                        const image = new Image;
-                        image.src = this.image.src;
-                        processing_context.drawImage(image, 0, 0);
-
-                        newImage = false;
-                        worker.postMessage(["setData", processing_context.getImageData(0, 0, image.width, image.height)]);
-                    }
-
-                    if (this.checkState(this.States.selectingPath)) {
-                        this.toggleTrace();
-                        worker.postMessage([
-                            "trace", x, y,
-                            document.getElementById("maxLineHeightOffset").value,
-                            document.getElementById("colourTolerance").value,
-                            document.getElementById("maxJumpOffset").value,
-                        ]);
-                    } else {
-                        this.toggleTrace();
-                        worker.postMessage(["point", x, y]);
-                    }
-                });
+                drawLines();
             });
         }
 
@@ -366,10 +369,10 @@ function exportTrace() {
     }
 
     worker.postMessage(["export",
-        [SPLTop, parseInt(yLines[0].pos)],
-        [SPLBot, parseInt(yLines[1].pos)],
-        [FRTop, parseInt(xLines[1].pos)],
-        [FRBot, parseInt(xLines[0].pos)],
+        [SPLTop, parseInt(splLines[0].pos)],
+        [SPLBot, parseInt(splLines[1].pos)],
+        [FRTop, parseInt(freqLines[1].pos)],
+        [FRBot, parseInt(freqLines[0].pos)],
         document.getElementById("lowFRExport").value,
         document.getElementById("highFRExport").value,
         document.getElementById("exportFRPrecision").value,
@@ -417,7 +420,8 @@ function restoreDefault() {
 }
 
 function updateLineMoveSpeed() {
-    lineMoveSpeed = parseInt(document.getElementById("moveSpeed").value);
+    hLineMoveSpeed = Math.max(1, parseInt(document.getElementById("moveSpeedOffset").value) + Math.floor(trace_canvas.width * 0.004));
+    vLineMoveSpeed = Math.max(1, parseInt(document.getElementById("moveSpeedOffset").value) + Math.floor(trace_canvas.height * 0.004));
 }
 
 function updateSizeRatio() {

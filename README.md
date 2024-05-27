@@ -16,8 +16,8 @@
 ## On Mobile
 ### Usage
 - Move the SPL and Frequency lines by using the buttons, selecting the line to trace works as normal but may require more tries
-### Line Move Speed
-- Speed at which the SPL and Frequency lines move at when holding the buttons
+### Line Move Speed Offset
+- Offset to the speed at which the SPL and Frequency lines move at when holding the buttons
 
 ## Settings:
 ### Colour Tolerance

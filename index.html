@@ -34,15 +34,15 @@
             <button onclick="exportTrace()" id="export" class="disableme">Export Trace</button>
         </div>
     </div>
-    <div class="sidebarSection">
+    <div class="sidebarSection moveButtonContainer">
         <div>
             <div>
                 <label for="SPLTop">Higher SPL (dB): </label>
                 <input type="number" id="SPLTop"/>
             </div>
             <div class="moveButtons">
-                <button move="true" btn-name="spltop" btn-dir="down" class="disableme">▼</button>
-                <button move="true" btn-name="spltop" btn-dir="up" class="disableme">▲</button>
+                <button move="true" btn-name="spltop" dir="1" class="disableme">▼</button>
+                <button move="true" btn-name="spltop" dir="-1" class="disableme">▲</button>
             </div>
         </div>
         <div>
@@ -51,8 +51,8 @@
                 <input type="number" id="SPLBot"/>
             </div>
             <div class="moveButtons">
-                <button move="true" btn-name="splbot" btn-dir="down" class="disableme">▼</button>
-                <button move="true" btn-name="splbot" btn-dir="up" class="disableme">▲</button>
+                <button move="true" btn-name="splbot" dir="1" class="disableme">▼</button>
+                <button move="true" btn-name="splbot" dir="-1" class="disableme">▲</button>
             </div>
         </div>
         <div>
@@ -61,8 +61,8 @@
                 <input type="number" id="FRTop"/>
             </div>
             <div class="moveButtons">
-                <button move="true" btn-name="frtop" btn-dir="up" class="disableme">◀</button>
-                <button move="true" btn-name="frtop" btn-dir="down" class="disableme">▶</button>
+                <button move="true" btn-name="frtop" dir="-1" class="disableme">◀</button>
+                <button move="true" btn-name="frtop" dir="1" class="disableme">▶</button>
             </div>
         </div>
         <div>
@@ -71,13 +71,13 @@
                 <input type="number" id="FRBot" min="0" onchange="minVal(this)"/>
             </div>
             <div class="moveButtons">
-                <button move="true" btn-name="frbot" btn-dir="up" class="disableme">◀</button>
-                <button move="true" btn-name="frbot" btn-dir="down" class="disableme">▶</button>
+                <button move="true" btn-name="frbot" dir="-1" class="disableme">◀</button>
+                <button move="true" btn-name="frbot" dir="1" class="disableme">▶</button>
             </div>
         </div>
         <div>
-            <label for="moveSpeed">Line Move Speed: </label>
-            <input type="number" id="moveSpeed" min="1" onchange="updateLineMoveSpeed(); minVal(this)"/>
+            <label for="moveSpeedOffset">Line Move Speed Offset: </label>
+            <input type="number" id="moveSpeedOffset" onchange="updateLineMoveSpeed()"/>
         </div>
     </div>
     <div class="sidebarSection">
