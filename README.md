@@ -19,7 +19,7 @@
 ### Line Move Speed Offset
 - Offset to the speed at which the SPL and Frequency lines move at when holding the buttons
 
-## Settings:
+## Trace Settings:
 ### Colour Tolerance
 - Adjust the maximum tolerance for colours that the tracer takes into account when tracing the line
 - Increase this if your line is not a single colour
