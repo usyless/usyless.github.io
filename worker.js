@@ -154,8 +154,8 @@ class exportString {
         } else {
             this.delim = " ";
         }
-        this.addData(`* Exported with UsyTrace, available at https://usyless.github.io/
-* Freq(Hz)`, 'SPL(dB)');
+        this.data = `* Exported with UsyTrace, available at https://usyless.github.io/
+* Freq(Hz)${this.delim}SPL(dB)`;
     }
     addData(freq, spl) {
         this.data += `
