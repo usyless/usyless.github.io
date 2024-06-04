@@ -36,8 +36,7 @@ function State() {
             initial: 0,
             imageLoaded: 1,
             selectingPath: 2,
-            selectingPoint: 3,
-            tracing: 4,
+            selectingPoint: 3
         }
         state = this.States.initial;
         previousState = null;
@@ -51,6 +50,7 @@ function State() {
         imageInput = document.getElementById("imageInputDiv");
         fileInput = document.getElementById('imageInput');
         main = document.getElementById('main');
+        overlay = document.getElementById('overlay');
         imageInputEvent = () => document.getElementById("imageInput").click();
 
         constructor() {
@@ -62,18 +62,18 @@ function State() {
             this.pathButton.addEventListener('click', () => this.togglePath());
             this.pointButton.addEventListener('click', () => this.togglePoint());
             this.fileInput.addEventListener('change', () => this.loadNewImage());
-            document.addEventListener('dragover', (e) => {
+            this.main.addEventListener('dragover', (e) => {
                 e.preventDefault()
                 e.dataTransfer.dropEffect = 'copy';
-                this.main.style.opacity = "0.2";
+                this.main.classList.add("lowOpacity");
             });
             ['dragleave', 'dragend'].forEach(ev => {
-                document.addEventListener(ev, (e) => {
+                this.main.addEventListener(ev, (e) => {
                     e.preventDefault();
-                    this.main.style.opacity = "1";
+                    this.main.classList.remove("lowOpacity");
                 });
             });
-            document.addEventListener('drop', (e) => {
+            this.main.addEventListener('drop', (e) => {
                 e.preventDefault();
                 this.main.style.opacity = "1";
                 this.fileInput.files = e.dataTransfer.files;
@@ -276,23 +276,18 @@ function State() {
             return false;
         }
 
-        toggleImageInput() {
-            if (this.imageInput.classList.toggle("disabled")) this.imageInput.removeEventListener("click", this.imageInputEvent);
-            else this.imageInput.addEventListener("click", this.imageInputEvent);
-        }
-
         startImageEditing() {
             this.image.classList.add("crosshair_hover");
             this.image.classList.remove("removePointerEvents");
             this.canvas.classList.add("removePointerEvents");
-            this.canvas.style.display = "none";
+            this.canvas.classList.add("hidden");
         }
 
         stopImageEditing() {
             this.image.classList.remove("crosshair_hover");
             this.image.classList.add("removePointerEvents");
             this.canvas.classList.remove("removePointerEvents");
-            this.canvas.style.display = "block";
+            this.canvas.classList.remove("hidden");
         }
 
         buttonsToDefault() {
@@ -336,23 +331,10 @@ function State() {
         }
 
         toggleTrace() {
-            if (this.checkState([this.States.selectingPath, this.States.selectingPoint])) {
-                this.toggleImageInput();
-                this.image.classList.remove("crosshair_hover");
-                this.image.classList.add("removePointerEvents");
-                this.buttons.forEach(btn => {
-                    btn.disabled = true;
-                    btn.innerText = "Tracing in progress";
-                });
-                this.previousState = this.state;
-                this.updateState(this.States.tracing);
-            } else if (this.checkState(this.States.tracing)) {
-                this.toggleImageInput();
-                this.buttonsToDefault();
-                this.updateState(this.States.imageLoaded);
-                if (this.previousState === this.States.selectingPath) this.togglePath();
-                else this.togglePoint();
-            }
+            this.overlay.classList.toggle("hidden");
+            this.main.classList.toggle("lowOpacity");
+            this.main.classList.toggle("not_allowed");
+            this.main.classList.toggle("removePointerEvents");
         }
     }
 
@@ -453,7 +435,7 @@ function createWorker() {
                 if (traceData.size > 1) {
                     const first = traceData.entries().next().value;
                     beginPlot(first[0], first[1]);
-                    traceData.forEach((y, x) => plotLine(x, y));
+                    for (const [x, y] of traceData) plotLine(x, y);
                 }
                 state.toggleTrace();
             } else {

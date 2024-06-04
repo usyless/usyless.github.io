@@ -11,12 +11,28 @@ body {
     margin: 0;
     background-color: var(--background-primary);
     font-family: Calibri, Candara, Segoe, Segoe UI, Optima, Arial, sans-serif;
+    position: relative;
 }
 
 #main {
     height: 100vh;
+    width: 100vw;
     display: flex;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease-in-out;
+    position: absolute;
+}
+
+#overlay {
+    height: 100vh;
+    width: 100vw;
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    z-index: 99999;
+    pointer-events: none;
+    cursor: not-allowed;
 }
 
 * {
@@ -158,10 +174,18 @@ select {
     pointer-events: none;
 }
 
-.hidden {
+.hidden, .hidden * {
     display: none;
 }
 
 .crosshair_hover {
     cursor: crosshair;
+}
+
+.not_allowed {
+    cursor: not-allowed;
+}
+
+.lowOpacity {
+    opacity: 0.2;
 }
