@@ -35,7 +35,7 @@
                 <button onclick="exportTrace()" id="export" class="disableme">Export Trace</button>
             </div>
         </div>
-        <div class="sidebarSection" id="moveButtonContainer">
+        <div class="sidebarSection">
             <div>
                 <div>
                     <label for="SPLTop">Higher SPL (dB): </label>
@@ -101,6 +101,23 @@
         <div class="sidebarSection">
             <div>
                 <h3>Export Settings</h3>
+            </div>
+            <div>
+                <label for="PPO">Points Per Octave (PPO): </label>
+                <select name="PPO" id="PPO">
+                    <option value="6">6</option>
+                    <option value="12">12</option>
+                    <option value="24">24</option>
+                    <option value="48">48</option>
+                    <option value="96">96</option>
+                </select>
+            </div>
+            <div>
+                <label for="delimitation">Delimitation: </label>
+                <select name="delimitation" id="delimitation">
+                    <option value="tab">Tab</option>
+                    <option value="space">Space</option>
+                </select>
             </div>
             <div>
                 <label for="lowFRExport">Minimum Frequency (Hz): </label>

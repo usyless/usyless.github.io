@@ -12,6 +12,8 @@ const defaults = {
 
     "lineColour": "#ff0000",
 
+    "PPO": 48,
+    "delimitation": "tab",
     "lowFRExport": 20,
     "highFRExport": 20000,
     "exportSPLPrecision": 3,
@@ -25,8 +27,7 @@ const defaults = {
     "FRBot": ""
 }
 
-let worker, hLineMoveSpeed, vLineMoveSpeed, freqLines, splLines, newImage = true, sizeRatio, lineWidth,
-    firstLoad = true;
+let worker, hLineMoveSpeed, vLineMoveSpeed, freqLines, splLines, sizeRatio, lineWidth;
 restoreDefault();
 
 function State() {
@@ -40,6 +41,8 @@ function State() {
         }
         state = this.States.initial;
         previousState = null;
+        newImage = true;
+        firstLoad = true;
         pathButton = document.getElementById("selectPath");
         pointButton = document.getElementById("selectPoint");
         buttons = [this.pathButton, this.pointButton];
@@ -58,9 +61,10 @@ function State() {
 
             this.pathButton.addEventListener('click', () => this.togglePath());
             this.pointButton.addEventListener('click', () => this.togglePoint());
-            this.fileInput.addEventListener('change', () => this.newImage());
+            this.fileInput.addEventListener('change', () => this.loadNewImage());
             document.addEventListener('dragover', (e) => {
                 e.preventDefault()
+                e.dataTransfer.dropEffect = 'copy';
                 this.main.style.opacity = "0.2";
             });
             ['dragleave', 'dragend'].forEach(ev => {
@@ -126,7 +130,7 @@ function State() {
                     });
                 }
 
-                if (firstLoad) {
+                if (this.firstLoad) {
                     window.addEventListener('resize', () => {
                         updateSizeRatio();
                         drawLines();
@@ -229,7 +233,7 @@ function State() {
 
                         createWorker();
 
-                        if (newImage) {
+                        if (this.newImage) {
                             const processing_canvas = document.createElement("canvas");
                             const processing_context = processing_canvas.getContext('2d');
                             processing_canvas.width = this.image.naturalWidth;
@@ -239,7 +243,7 @@ function State() {
                             image.src = this.image.src;
                             processing_context.drawImage(image, 0, 0);
 
-                            newImage = false;
+                            this.newImage = false;
                             worker.postMessage(["setData", processing_context.getImageData(0, 0, image.width, image.height)]);
                         }
 
@@ -256,7 +260,7 @@ function State() {
                             worker.postMessage(["point", x, y]);
                         }
                     });
-                    firstLoad = false;
+                    this.firstLoad = false;
                 }
                 drawLines();
             });
@@ -298,8 +302,8 @@ function State() {
             });
         }
 
-        newImage() {
-            newImage = true;
+        loadNewImage() {
+            this.newImage = true;
             this.buttonsToDefault();
             this.stopImageEditing();
             this.image.src = URL.createObjectURL(document.getElementById('imageInput').files[0]);
@@ -395,7 +399,9 @@ function exportTrace() {
         document.getElementById("lowFRExport").value,
         document.getElementById("highFRExport").value,
         document.getElementById("exportFRPrecision").value,
-        document.getElementById("exportSPLPrecision").value
+        document.getElementById("exportSPLPrecision").value,
+        document.getElementById("PPO").value,
+        document.getElementById("delimitation").value
     ]);
 }
 

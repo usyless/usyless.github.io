@@ -68,7 +68,7 @@ input {
     max-width: 80%;
 }
 
-input[type="number"] {
+input[type="number"], select {
     border: 2px solid var(--background-tertiary);
     border-radius: 5px;
     color: inherit;
@@ -76,13 +76,17 @@ input[type="number"] {
     transition: border-color 0.1s ease;
 }
 
-input[type="number"]:hover {
+input[type="number"]:hover, select:hover {
     border-color: var(--background-quaternary);
 }
 
-input[type="number"]:focus {
+input[type="number"]:focus, select:focus {
     outline: none;
     border-color: var(--background-quaternary);
+}
+
+select {
+    background-color: var(--background-secondary);
 }
 
 #sidebar {

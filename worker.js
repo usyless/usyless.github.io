@@ -39,24 +39,22 @@ onmessage = (e) => {
             // (log10(top FR value) - log10(bottom FR value)) / (top FR pixel - bottom FR pixel)
             const FRRatio = (Math.log10(e.data[3][0]) - logFRBot) / (e.data[3][1] - FRBotPixel);
 
-            const export_string = new exportString();
+            const export_string = new exportString(e.data[10]);
 
-            let freq = 1, spl = 1, minAdded = false;
+            let FRxSPL = [];
             for (let entry of simplifiedTrace) {
-                freq = Math.pow(10, ((parseInt(entry[0]) - FRBotPixel) * FRRatio) + logFRBot);
-                spl = (((parseInt(entry[1]) - SPLBotPixel) * SPLRatio) + SPLBot).toFixed(SPLprec);
-                if (freq >= lowFR) {
-                    if (!minAdded && freq !== lowFR) {
-                        export_string.addData(lowFR.toFixed(FRprec), spl);
-                        minAdded = true;
-                    }
-                    export_string.addData(freq.toFixed(FRprec), spl);
-                    if (freq > highFR) break;
-                }
+                FRxSPL.push([Math.pow(10, ((parseInt(entry[0]) - FRBotPixel) * FRRatio) + logFRBot),
+                    ((parseInt(entry[1]) - SPLBotPixel) * SPLRatio) + SPLBot]);
             }
-            if (freq <= highFR) {
-                export_string.addData(highFR.toFixed(FRprec), spl);
+
+            const PPO = Math.log10(Math.pow(2, 1/parseInt(e.data[9])));
+            const splFunc = contiguousLinearInterpolation(FRxSPL);
+            for (let v = Math.log10(lowFR);; v += PPO) {
+                const freq = Math.pow(10, v);
+                export_string.addData(freq.toFixed(FRprec), splFunc(freq).toFixed(SPLprec));
+                if (v >= Math.log10(highFR)) break;
             }
+
             postMessage(["export", export_string.data]);
             break;
         }
@@ -72,7 +70,6 @@ onmessage = (e) => {
             break;
         }
         case "trace": {
-            // TODO: octave smoothing
             savePreviousTrace();
             const x = parseInt(e.data[1]);
             const y = parseInt(e.data[2]);
@@ -150,11 +147,19 @@ class RGB {
 }
 
 class exportString {
-    data = `* Exported with UsyTrace, available at https://usyless.github.io/
-Freq(Hz) SPL(dB)`
+    data = '';
+    constructor(delim = "tab") {
+        if (delim === "tab") {
+            this.delim = "\t";
+        } else {
+            this.delim = " ";
+        }
+        this.addData(`* Exported with UsyTrace, available at https://usyless.github.io/
+* Freq(Hz)`, 'SPL(dB)');
+    }
     addData(freq, spl) {
         this.data += `
-${freq.toString()} ${spl.toString()}`
+${freq.toString()}${this.delim}${spl.toString()}`
     }
 }
 
@@ -197,4 +202,31 @@ function parseIntDefault(a, def) {
 
 function savePreviousTrace() {
     previousTrace = new Map(JSON.parse(JSON.stringify(Array.from(currentTrace))));
+}
+
+function contiguousLinearInterpolation(FRxSPL) {
+    const firstF = FRxSPL[0][0],
+        lastF = FRxSPL[FRxSPL.length - 1][0],
+        firstV = FRxSPL[0][1],
+        lastV = FRxSPL[FRxSPL.length - 1][1];
+
+    let i = 0;
+
+    return (f) => {
+        if (f <= firstF) return firstV;
+        else if (f >= lastF) return lastV;
+        else {
+            let lower, upper;
+            for (; i < FRxSPL.length; i++) {
+                if (FRxSPL[i][0] < f) lower = FRxSPL[i];
+                else if (FRxSPL[i][0] > f) {
+                    upper = FRxSPL[i];
+                    i--;
+                    break;
+                }
+            }
+            if (lower[1] === upper[1]) return lower[1];
+            return ((upper[1] - lower[1]) * ((f - lower[0]) / (upper[0] - lower[0]))) + lower[1];
+        }
+    }
 }

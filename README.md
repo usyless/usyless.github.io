@@ -33,6 +33,10 @@
 - Decrease this if the tracer is tracing stuff to the left and right of the line
 
 ## Export Settings
+### Points Per Octave
+- The points per octave to export data with, applied smoothing is half of the export PPO
+### Delimitation
+- Whether to use tab or space between exported frequency and spl pairs
 ### Minimum Frequency
 - The minimum frequency to export to, will draw a straight line from first data point to minimum frequency
 ### Maximum Frequency
