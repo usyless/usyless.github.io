@@ -25,7 +25,7 @@ const defaults = {
     "FRBot": ""
 }
 
-let worker, hLineMoveSpeed, vLineMoveSpeed, freqLines, splLines, sizeRatio, lineWidth;
+let worker, hLineMoveSpeed, vLineMoveSpeed, freqLines, splLines, sizeRatio, lineWidth, imageData;
 restoreDefault();
 
 function State() {
@@ -75,17 +75,16 @@ function State() {
         firstLoad = true;
         pathButton = document.getElementById('selectPath');
         pointButton = document.getElementById('selectPoint');
-        buttons = [this.pathButton, this.pointButton];
         image = document.getElementById('uploadedImage');
         canvas = document.getElementById('lineCanvas');
-        imageInput = document.getElementById('imageInputDiv');
         fileInput = document.getElementById('imageInput');
         main = document.getElementById('main');
         overlay = document.getElementById('overlay');
+        glass = document.getElementById('glass');
 
         constructor() {
             multiEventListener('dragstart', this.image, (e) => e.preventDefault());
-            multiEventListener('click', this.imageInput, () => this.fileInput.click());
+            multiEventListener('click', document.getElementById('imageInputDiv'), () => this.fileInput.click());
             multiEventListener('click', document.getElementById("restoreDefault"), () => restoreDefault());
             multiEventListener('click', this.pathButton, () => this.togglePath());
             multiEventListener('click', this.pointButton, () => this.togglePoint());
@@ -106,11 +105,24 @@ function State() {
                 let event = new Event('change');
                 this.fileInput.dispatchEvent(event);
             });
+            multiEventListener(['mouseover', 'mousemove'], this.image, (e) => {
+                e.preventDefault();
+                const parentRect = this.image.parentElement.getBoundingClientRect(),
+                    rect = this.image.getBoundingClientRect(),
+                    x = e.clientX,
+                    y = e.clientY;
+                this.glass.style.left = `${x - parentRect.left}px`;
+                this.glass.style.top = `${y - parentRect.top}px`;
+                const v = (Math.floor((y - rect.top) * sizeRatio) * imageData.width * 4) + (Math.floor((x - rect.left) * sizeRatio) * 4);
+                this.glass.style.backgroundColor = `rgb(${imageData.data[v]}, ${imageData.data[v + 1]}, ${imageData.data[v + 2]})`;
+                this.glass.classList.remove('hidden');
+            });
+            multiEventListener(['mouseleave', 'mouseout', 'load'], this.image, () => this.glass.classList.add('hidden'));
             multiEventListener('load', this.image, () => {
-                document.querySelectorAll("[temp_thing='true']").forEach(e => e.remove());
-                document.querySelectorAll("button[class='disableme']").forEach(b => b.disabled = false);
+                document.querySelectorAll("[temp_thing='true']").forEach((e) => e.remove());
+                document.querySelectorAll("button[class='disableme']").forEach((b) => b.disabled = false);
 
-                document.querySelectorAll("canvas").forEach(canvas => {
+                document.querySelectorAll("canvas").forEach((canvas) => {
                     canvas.width = this.image.naturalWidth;
                     canvas.height = this.image.naturalHeight;
                 });
@@ -130,6 +142,18 @@ function State() {
                     {pos: canvas.height * 0.1, type: "High"},
                     {pos: canvas.height * 0.9, type: "Low"}
                 ];
+
+                {
+                    const processing_canvas = document.createElement("canvas");
+                    const processing_context = processing_canvas.getContext('2d');
+                    processing_canvas.width = this.image.naturalWidth;
+                    processing_canvas.height = this.image.naturalHeight;
+
+                    const image = new Image;
+                    image.src = this.image.src;
+                    processing_context.drawImage(image, 0, 0);
+                    imageData = processing_context.getImageData(0, 0, image.naturalWidth, image.naturalHeight);
+                }
 
                 function drawLines() {
                     context.clearRect(0, 0, canvas.width, canvas.height);
@@ -248,29 +272,17 @@ function State() {
                     });
 
                     multiEventListener('click', this.image, (e) => {
-                        const rect = this.image.getBoundingClientRect();
-                        let x = e.clientX - rect.left;
-                        let y = e.clientY - rect.top;
-
-                        x *= sizeRatio;
-                        y *= sizeRatio;
+                        const rect = this.image.getBoundingClientRect(),
+                            x = (e.clientX - rect.left) * sizeRatio,
+                            y = (e.clientY - rect.top) * sizeRatio;
 
                         createWorker();
 
                         if (this.newImage) {
-                            const processing_canvas = document.createElement("canvas");
-                            const processing_context = processing_canvas.getContext('2d');
-                            processing_canvas.width = this.image.naturalWidth;
-                            processing_canvas.height = this.image.naturalHeight;
-
-                            const image = new Image;
-                            image.src = this.image.src;
-                            processing_context.drawImage(image, 0, 0);
-
                             this.newImage = false;
                             worker.postMessage({
                                 type: 'setData',
-                                imageData: processing_context.getImageData(0, 0, image.width, image.height)
+                                imageData: imageData
                             });
                         }
 
@@ -326,7 +338,7 @@ function State() {
         }
 
         buttonsToDefault() {
-            this.buttons.forEach(btn => {
+            [this.pathButton, this.pointButton].forEach(btn => {
                 btn.disabled = false;
                 btn.innerText = btn.getAttribute("def");
             });

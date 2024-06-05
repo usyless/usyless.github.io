@@ -189,3 +189,12 @@ select {
 .lowOpacity {
     opacity: 0.2;
 }
+
+.magnify {
+    position: absolute;
+    border: 3px solid #000;
+    border-radius: 50%;
+    width: 2em;
+    height: 2em;
+    z-index: 9999999;
+}
