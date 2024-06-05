@@ -105,7 +105,7 @@ function State() {
                 let event = new Event('change');
                 this.fileInput.dispatchEvent(event);
             });
-            multiEventListener(['mouseover', 'mousemove'], this.image, (e) => {
+            multiEventListener(['mousemove'], this.image, (e) => {
                 e.preventDefault();
                 const parentRect = this.image.parentElement.getBoundingClientRect(),
                     rect = this.image.getBoundingClientRect(),
@@ -117,7 +117,7 @@ function State() {
                 this.glass.style.backgroundColor = `rgb(${imageData.data[v]}, ${imageData.data[v + 1]}, ${imageData.data[v + 2]})`;
                 this.glass.classList.remove('hidden');
             });
-            multiEventListener(['mouseleave', 'mouseout', 'load'], this.image, () => this.glass.classList.add('hidden'));
+            multiEventListener(['mouseup', 'mouseleave', 'mouseout', 'touchend', 'touchcancel'], this.image, () => this.glass.classList.add('hidden'));
             multiEventListener('load', this.image, () => {
                 document.querySelectorAll("[temp_thing='true']").forEach((e) => e.remove());
                 document.querySelectorAll("button[class='disableme']").forEach((b) => b.disabled = false);
