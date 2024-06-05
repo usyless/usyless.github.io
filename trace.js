@@ -71,7 +71,6 @@ function State() {
             selectingPoint: 3
         }
         state = this.States.initial;
-        newImage = true;
         firstLoad = true;
         pathButton = document.getElementById('selectPath');
         pointButton = document.getElementById('selectPoint');
@@ -83,6 +82,7 @@ function State() {
         glass = document.getElementById('glass');
 
         constructor() {
+            createWorker();
             multiEventListener('dragstart', this.image, (e) => e.preventDefault());
             multiEventListener('click', document.getElementById('imageInputDiv'), () => this.fileInput.click());
             multiEventListener('click', document.getElementById("restoreDefault"), () => restoreDefault());
@@ -153,6 +153,10 @@ function State() {
                     image.src = this.image.src;
                     processing_context.drawImage(image, 0, 0);
                     imageData = processing_context.getImageData(0, 0, image.naturalWidth, image.naturalHeight);
+                    worker.postMessage({
+                        type: 'setData',
+                        imageData: imageData
+                    });
                 }
 
                 function drawLines() {
@@ -276,16 +280,6 @@ function State() {
                             x = (e.clientX - rect.left) * sizeRatio,
                             y = (e.clientY - rect.top) * sizeRatio;
 
-                        createWorker();
-
-                        if (this.newImage) {
-                            this.newImage = false;
-                            worker.postMessage({
-                                type: 'setData',
-                                imageData: imageData
-                            });
-                        }
-
                         if (this.checkState(this.States.selectingPath)) {
                             this.toggleTrace();
                             worker.postMessage({
@@ -345,7 +339,6 @@ function State() {
         }
 
         loadNewImage() {
-            this.newImage = true;
             this.buttonsToDefault();
             this.stopImageEditing();
             this.image.src = URL.createObjectURL(document.getElementById('imageInput').files[0]);
