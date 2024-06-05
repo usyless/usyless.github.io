@@ -10,8 +10,6 @@ const defaults = {
     "maxLineHeightOffset": 0,
     "maxJumpOffset": 0,
 
-    "lineColour": "#ff0000",
-
     "PPO": 48,
     "delimitation": "tab",
     "lowFRExport": 20,
@@ -39,7 +37,6 @@ function State() {
             selectingPoint: 3
         }
         state = this.States.initial;
-        previousState = null;
         newImage = true;
         firstLoad = true;
         pathButton = document.getElementById("selectPath");
@@ -244,20 +241,29 @@ function State() {
                             processing_context.drawImage(image, 0, 0);
 
                             this.newImage = false;
-                            worker.postMessage(["setData", processing_context.getImageData(0, 0, image.width, image.height)]);
+                            worker.postMessage({
+                                type: 'setData',
+                                imageData: processing_context.getImageData(0, 0, image.width, image.height)
+                            });
                         }
 
                         if (this.checkState(this.States.selectingPath)) {
                             this.toggleTrace();
-                            worker.postMessage([
-                                "trace", x, y,
-                                document.getElementById("maxLineHeightOffset").value,
-                                document.getElementById("colourTolerance").value,
-                                document.getElementById("maxJumpOffset").value,
-                            ]);
+                            worker.postMessage({
+                                type: 'trace',
+                                x: x,
+                                y: y,
+                                lineHeightOffset: document.getElementById("maxLineHeightOffset").value,
+                                colourTolerance: document.getElementById("colourTolerance").value,
+                                maxJumpOffset: document.getElementById("maxJumpOffset").value
+                            });
                         } else {
                             this.toggleTrace();
-                            worker.postMessage(["point", x, y]);
+                            worker.postMessage({
+                                type: 'point',
+                                x: x,
+                                y: y
+                            });
                         }
                     });
                     this.firstLoad = false;
@@ -341,14 +347,14 @@ function State() {
     return new State();
 }
 
-function beginPlot(beginX, beginY) {
+function beginPlot(beginX, beginY, colour = '#ff0000') {
     clearPath("lmfao");
     trace_ctx.beginPath();
     trace_ctx.moveTo(beginX, beginY);
+    trace_ctx.strokeStyle = colour;
 }
 
 function plotLine(toX, toY) {
-    trace_ctx.strokeStyle = document.getElementById("lineColour").value;
     trace_ctx.lineWidth = lineWidth;
     trace_ctx.lineTo(toX, toY);
     trace_ctx.stroke();
@@ -357,7 +363,7 @@ function plotLine(toX, toY) {
 function clearPath(no) { // put in a random string to not post to worker
     trace_ctx.clearRect(0, 0, trace_canvas.width, trace_canvas.height);
     trace_ctx.beginPath();
-    if (worker && !no) worker.postMessage(["clear"]);
+    if (worker && !no) worker.postMessage({type: "clear"});
 }
 
 function exportTrace() {
@@ -373,18 +379,27 @@ function exportTrace() {
         return;
     }
 
-    worker.postMessage(["export",
-        [SPLTop, parseInt(splLines[0].pos)],
-        [SPLBot, parseInt(splLines[1].pos)],
-        [FRTop, parseInt(freqLines[1].pos)],
-        [FRBot, parseInt(freqLines[0].pos)],
-        document.getElementById("lowFRExport").value,
-        document.getElementById("highFRExport").value,
-        document.getElementById("exportFRPrecision").value,
-        document.getElementById("exportSPLPrecision").value,
-        document.getElementById("PPO").value,
-        document.getElementById("delimitation").value
-    ]);
+    worker.postMessage({
+        type: "export",
+        SPL: {
+            top: SPLTop,
+            topPixel: splLines[0].pos,
+            bottom: SPLBot,
+            bottomPixel: splLines[1].pos
+        },
+        FR: {
+            top: FRTop,
+            topPixel: freqLines[1].pos,
+            bottom: FRBot,
+            bottomPixel: freqLines[0].pos,
+        },
+        lowFR: document.getElementById("lowFRExport").value,
+        highFR: document.getElementById("highFRExport").value,
+        FRPrecision: document.getElementById("exportFRPrecision").value,
+        SPLPrecision: document.getElementById("exportSPLPrecision").value,
+        PPO: document.getElementById("PPO").value,
+        delim: document.getElementById("delimitation").value
+    });
 }
 
 function minVal(e) {
@@ -394,22 +409,14 @@ function minVal(e) {
 function undo() {
     if (worker) {
         state.toggleTrace();
-        worker.postMessage(["undo"]);
-    }
-}
-
-function updateLine() {
-    if (worker) {
-        state.toggleTrace();
-        worker.postMessage(["get"]);
+        worker.postMessage({type: "undo"});
     }
 }
 
 function restoreDefault() {
-    for (let val in defaults) {
+    for (const val in defaults) {
         document.getElementById(val).value = defaults[val];
     }
-    updateLine();
 }
 
 function updateLineMoveSpeed() {
@@ -430,17 +437,17 @@ function createWorker() {
         clearPath();
         worker = new Worker("./worker.js");
         worker.onmessage = (e) => {
-            if (e.data[0] === "done") {
-                const traceData = e.data[1];
+            if (e.data['type'] === "done") {
+                const traceData = e.data['trace'];
                 if (traceData.size > 1) {
                     const first = traceData.entries().next().value;
-                    beginPlot(first[0], first[1]);
+                    beginPlot(first[0], first[1], e.data['colour']);
                     for (const [x, y] of traceData) plotLine(x, y);
                 }
                 state.toggleTrace();
             } else {
                 let a = document.createElement("a");
-                let url = URL.createObjectURL(new Blob([e.data[1]], {type: "text/plain;charset=utf-8"}));
+                let url = URL.createObjectURL(new Blob([e.data['export']], {type: "text/plain;charset=utf-8"}));
                 a.href = url;
                 a.download = "trace.txt";
                 document.body.appendChild(a);

@@ -45,7 +45,3 @@
 - With how many decimal places to save SPL values to
 ### Frequency Precision
 - With how many decimal places to save Frequency values to
-
-## Extras
-### Trace Line Colour
-- Colour of the traced line on screen

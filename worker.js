@@ -4,92 +4,96 @@ let imageData;
 let currentTrace = new Map();
 let simplifiedTrace = new Map();
 let previousTrace = new Map();
+let traceColour = '#ff0000';
+let previousColour;
 
 const funcs = [[(j, z) => j + z, 1], [(j, z) => j - z, 0]]; // the functional parameters go crazy
 let colours = [];
 
 onmessage = (e) => {
-    switch (e.data[0]) {
+    switch (e.data['type']) {
         case "clear": {
             currentTrace.clear();
             simplifiedTrace.clear();
+            traceColour = '#ff0000';
             break;
         }
         case "undo": {
-            cleanUpData(previousTrace);
-            postMessage(["done", simplifiedTrace]);
             currentTrace = new Map(JSON.parse(JSON.stringify(Array.from(previousTrace))));
-            break;
-        }
-        case "get": {
-            postMessage(["done", simplifiedTrace]);
+            traceColour = previousColour;
+            cleanDataSendTrace();
             break;
         }
         case "export": {
-            const lowFR = parseInt(e.data[5]), highFR = parseInt(e.data[6]);
-            const FRprec = parseInt(e.data[7]), SPLprec = parseInt(e.data[8]);
+            const lowFR = parseInt(e.data['lowFR']),
+                highFR = parseInt(e.data['highFR']),
+                FRPrecision = parseInt(e.data['FRPrecision']),
+                SPLPrecision = parseInt(e.data['SPLPrecision']);
 
             // SPL Stuff
-            const SPLBot = parseInt(e.data[2][0]), SPLBotPixel = parseInt(e.data[2][1]);
+            const SPL = e.data['SPL'],
+                SPLBot = parseInt(SPL['bottom']),
+                SPLBotPixel = parseInt(SPL['bottomPixel']),
             // (top SPL value - bottom SPL value) / (top SPL pixel - bottom SPL pixel)
-            const SPLRatio = (parseInt(e.data[1][0]) - SPLBot) / (parseInt(e.data[1][1]) - SPLBotPixel);
+                SPLRatio = (parseInt(SPL['top']) - SPLBot) / (parseInt(SPL['topPixel']) - SPLBotPixel);
 
             // FR Stuff
-            const FRBotPixel = parseInt(e.data[4][1]), logFRBot = Math.log10(e.data[4][0]);
+            const FR = e.data['FR'],
+                FRBotPixel = parseInt(FR['bottomPixel']),
+                logFRBot = Math.log10(parseInt(FR['bottom'])),
             // (log10(top FR value) - log10(bottom FR value)) / (top FR pixel - bottom FR pixel)
-            const FRRatio = (Math.log10(e.data[3][0]) - logFRBot) / (e.data[3][1] - FRBotPixel);
+                FRRatio = (Math.log10(parseInt(FR['top'])) - logFRBot) / (parseInt(FR['topPixel']) - FRBotPixel);
 
-            const export_string = new exportString(e.data[10]);
+            const export_string = new exportString(e.data['delim']);
 
             let FRxSPL = [];
-            for (let entry of simplifiedTrace) {
+            for (const entry of simplifiedTrace) {
                 FRxSPL.push([Math.pow(10, ((parseInt(entry[0]) - FRBotPixel) * FRRatio) + logFRBot),
                     ((parseInt(entry[1]) - SPLBotPixel) * SPLRatio) + SPLBot]);
             }
 
-            const PPO = Math.log10(Math.pow(2, 1/parseInt(e.data[9])));
+            const PPO = Math.log10(Math.pow(2, 1 / parseInt(e.data['PPO'])));
             const splFunc = contiguousLinearInterpolation(FRxSPL);
             for (let v = Math.log10(lowFR);; v += PPO) {
                 const freq = Math.pow(10, v);
-                export_string.addData(freq.toFixed(FRprec), splFunc(freq).toFixed(SPLprec));
+                export_string.addData(freq.toFixed(FRPrecision), splFunc(freq).toFixed(SPLPrecision));
                 if (v >= Math.log10(highFR)) break;
             }
 
-            postMessage(["export", export_string.data]);
+            postMessage({
+                type: "export",
+                export: export_string.data
+            });
             break;
         }
         case "point": {
             savePreviousTrace();
-            currentTrace.set(parseInt(e.data[1]), parseInt(e.data[2]));
-            cleanUpData(currentTrace);
-            postMessage(["done", simplifiedTrace]);
+            currentTrace.set(parseInt(e.data['x']), parseInt(e.data['y']));
+            cleanDataSendTrace();
             break;
         }
         case "setData": {
-            imageData = e.data[1];
+            imageData = e.data['imageData'];
             break;
         }
         case "trace": {
             savePreviousTrace();
-            const x = parseInt(e.data[1]);
-            const y = parseInt(e.data[2]);
-            const maxLineHeight = Math.max(0, Math.floor(imageData.height * 0.05) + parseIntDefault(e.data[3], 0));
-            const tolerance = parseInt(e.data[4]);
-            const maxJump = Math.max(0, Math.floor(imageData.width * 0.02)) + parseIntDefault(e.data[5], 0);
-
-            const colour = new RGB(x, y, tolerance);
+            const x = parseInt(e.data['x']), y = parseInt(e.data['y']),
+                maxLineHeight = Math.max(0, Math.floor(imageData.height * 0.05) + parseIntDefault(e.data['maxLineHeightOffset'], 0)),
+                maxJump = Math.max(0, Math.floor(imageData.width * 0.02)) + parseIntDefault(e.data['maxJumpOffset'], 0),
+                colour = new RGB(x, y, parseInt(e.data['colourTolerance']));
 
             trace(x, (x) => x >= 0, -1);
             trace(x + 1, (x) => x < imageData.width, 1);
 
-            cleanUpData(currentTrace);
-            postMessage(["done", simplifiedTrace]);
+            traceColour = colour.getTraceColourHex();
+            cleanDataSendTrace();
 
             function trace(start, loop_func, step) {
                 let n, m = 0, j = y;
                 for (let i = start; loop_func(i); i += step) {
                     colours = [];
-                    for (let [func, start] of funcs) {
+                    for (const [func, start] of funcs) {
                         for (let z = start; z <= maxLineHeight + m; z++) {
                             n = Math.max(0, Math.min(imageData.height - 1, func(j, z)));
                             if (colour.withinTolerance(i, n)) colours.push(n);
@@ -139,6 +143,13 @@ class RGB {
         this.values++;
     }
 
+    getTraceColourHex() {
+        const s = Math.min(this.R, this.G, this.B);
+        if (s === this.R) return '#ff0000';
+        if (s === this.G) return '#00ff00';
+        return '#0000ff';
+    }
+
     static getRGB(x, y) {
         return [imageData.data[(y * imageData.width * 4) + (x * 4)], // R
                 imageData.data[(y * imageData.width * 4) + (x * 4) + 1], // G
@@ -163,26 +174,26 @@ ${freq.toString()}${this.delim}${spl.toString()}`
     }
 }
 
-function cleanUpData(data) {
-    if (data.size > 2) {
-        data = new Map([...data.entries()].sort((a, b) => a[0] - b[0]));
+function cleanUpData() {
+    if (currentTrace.size > 2) {
+        currentTrace = new Map([...currentTrace.entries()].sort((a, b) => a[0] - b[0]));
         simplifiedTrace = new Map();
-        let z, avg, n = data.entries().next().value[0], identity = [], finalKey, finalValue;
-        simplifiedTrace.set(n, data.get(n));
+        let z, avg, n = currentTrace.entries().next().value[0], identity = [], finalKey, finalValue;
+        simplifiedTrace.set(n, currentTrace.get(n));
         for (let i = n + 1; i < imageData.width; i++) {
-            z = data.get(i);
+            z = currentTrace.get(i);
             if (z) {
                 finalValue = z;
                 identity = [];
-                for (let j = i; data.get(j) === z; j++) {
+                for (let j = i; currentTrace.get(j) === z; j++) {
                     finalKey = j;
                     identity.push(j);
                 }
                 if (identity.length === 1) {
-                    simplifiedTrace.set(i, data.get(i));
+                    simplifiedTrace.set(i, currentTrace.get(i));
                 } else {
                     avg = identity.reduce((a, b) => a + b, 0) / identity.length;
-                    simplifiedTrace.set(avg, data.get(i));
+                    simplifiedTrace.set(avg, currentTrace.get(i));
                     i += identity.length - 1;
                 }
             }
@@ -190,7 +201,7 @@ function cleanUpData(data) {
         simplifiedTrace.set(finalKey, finalValue);
     }
     else {
-        simplifiedTrace = data;
+        simplifiedTrace = currentTrace;
     }
 }
 
@@ -201,6 +212,7 @@ function parseIntDefault(a, def) {
 }
 
 function savePreviousTrace() {
+    previousColour = traceColour;
     previousTrace = new Map(JSON.parse(JSON.stringify(Array.from(currentTrace))));
 }
 
@@ -229,4 +241,13 @@ function contiguousLinearInterpolation(FRxSPL) {
             return ((upper[1] - lower[1]) * ((f - lower[0]) / (upper[0] - lower[0]))) + lower[1];
         }
     }
+}
+
+function cleanDataSendTrace() {
+    cleanUpData();
+    postMessage({
+        type: "done",
+        trace: simplifiedTrace,
+        colour: traceColour
+    });
 }
