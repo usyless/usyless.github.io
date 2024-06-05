@@ -27,37 +27,9 @@ const defaults = {
 
 let worker, hLineMoveSpeed, vLineMoveSpeed, freqLines, splLines, sizeRatio, lineWidth, imageData;
 restoreDefault();
+createWorker();
 
 function State() {
-    function createWorker() {
-        if (!worker) {
-            clearPath();
-            worker = new Worker("./worker.js");
-            worker.onmessage = (e) => {
-                if (e.data['type'] === "done") {
-                    const traceData = e.data['trace'];
-                    if (traceData.size > 1) {
-                        const first = traceData.entries().next().value;
-                        beginPlot(first[0], first[1], e.data['colour']);
-                        for (const [x, y] of traceData) plotLine(x, y);
-                    }
-                    state.toggleTrace();
-                } else {
-                    let a = document.createElement("a");
-                    let url = URL.createObjectURL(new Blob([e.data['export']], {type: "text/plain;charset=utf-8"}));
-                    a.href = url;
-                    a.download = "trace.txt";
-                    document.body.appendChild(a);
-                    a.click();
-                    setTimeout(() => {
-                        document.body.removeChild(a);
-                        window.URL.revokeObjectURL(url);
-                    }, 0);
-                }
-            }
-        }
-    }
-
     function multiEventListener(events, target, callback) {
         if (typeof (events) !== "object") events = [events];
         events.forEach((ev) => target.addEventListener(ev, callback));
@@ -82,7 +54,6 @@ function State() {
         glass = document.getElementById('glass');
 
         constructor() {
-            createWorker();
             multiEventListener('dragstart', this.image, (e) => e.preventDefault());
             multiEventListener('click', document.getElementById('imageInputDiv'), () => this.fileInput.click());
             multiEventListener('click', document.getElementById("restoreDefault"), () => restoreDefault());
@@ -464,4 +435,33 @@ function updateSizeRatio() {
 
 function updateLineWidth() {
     lineWidth = trace_canvas.height * 0.004;
+}
+
+function createWorker() {
+    if (!worker) {
+        clearPath();
+        worker = new Worker("./worker.js");
+        worker.onmessage = (e) => {
+            if (e.data['type'] === "done") {
+                const traceData = e.data['trace'];
+                if (traceData.size > 1) {
+                    const first = traceData.entries().next().value;
+                    beginPlot(first[0], first[1], e.data['colour']);
+                    for (const [x, y] of traceData) plotLine(x, y);
+                }
+                state.toggleTrace();
+            } else {
+                let a = document.createElement("a");
+                let url = URL.createObjectURL(new Blob([e.data['export']], {type: "text/plain;charset=utf-8"}));
+                a.href = url;
+                a.download = "trace.txt";
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 0);
+            }
+        }
+    }
 }
