@@ -151,9 +151,10 @@ class RGB {
     }
 
     static getRGB(x, y) {
-        return [imageData.data[(y * imageData.width * 4) + (x * 4)], // R
-                imageData.data[(y * imageData.width * 4) + (x * 4) + 1], // G
-                imageData.data[(y * imageData.width * 4) + (x * 4) + 2]]; // B
+        const v = (y * imageData.width * 4) + (x * 4);
+        return [imageData.data[v], // R
+                imageData.data[v + 1], // G
+                imageData.data[v + 2]]; // B
     }
 }
 
