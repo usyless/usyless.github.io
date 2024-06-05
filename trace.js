@@ -29,6 +29,40 @@ let worker, hLineMoveSpeed, vLineMoveSpeed, freqLines, splLines, sizeRatio, line
 restoreDefault();
 
 function State() {
+    function createWorker() {
+        if (!worker) {
+            clearPath();
+            worker = new Worker("./worker.js");
+            worker.onmessage = (e) => {
+                if (e.data['type'] === "done") {
+                    const traceData = e.data['trace'];
+                    if (traceData.size > 1) {
+                        const first = traceData.entries().next().value;
+                        beginPlot(first[0], first[1], e.data['colour']);
+                        for (const [x, y] of traceData) plotLine(x, y);
+                    }
+                    state.toggleTrace();
+                } else {
+                    let a = document.createElement("a");
+                    let url = URL.createObjectURL(new Blob([e.data['export']], {type: "text/plain;charset=utf-8"}));
+                    a.href = url;
+                    a.download = "trace.txt";
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                    }, 0);
+                }
+            }
+        }
+    }
+
+    function multiEventListener(events, target, callback) {
+        if (typeof (events) !== "object") events = [events];
+        events.forEach((ev) => target.addEventListener(ev, callback));
+    }
+
     class State {
         States = {
             initial: 0,
@@ -39,45 +73,40 @@ function State() {
         state = this.States.initial;
         newImage = true;
         firstLoad = true;
-        pathButton = document.getElementById("selectPath");
-        pointButton = document.getElementById("selectPoint");
+        pathButton = document.getElementById('selectPath');
+        pointButton = document.getElementById('selectPoint');
         buttons = [this.pathButton, this.pointButton];
         image = document.getElementById('uploadedImage');
         canvas = document.getElementById('lineCanvas');
-        imageInput = document.getElementById("imageInputDiv");
+        imageInput = document.getElementById('imageInputDiv');
         fileInput = document.getElementById('imageInput');
         main = document.getElementById('main');
         overlay = document.getElementById('overlay');
-        imageInputEvent = () => document.getElementById("imageInput").click();
 
         constructor() {
-            this.image.addEventListener('dragstart', (e) => e.preventDefault());
-            this.imageInput.addEventListener("click", this.imageInputEvent);
-            document.getElementById("restoreDefault").addEventListener("click", () => restoreDefault());
-            document.querySelectorAll("button[class='disableme']").forEach(b => b.disabled = true);
-
-            this.pathButton.addEventListener('click', () => this.togglePath());
-            this.pointButton.addEventListener('click', () => this.togglePoint());
-            this.fileInput.addEventListener('change', () => this.loadNewImage());
-            this.main.addEventListener('dragover', (e) => {
+            multiEventListener('dragstart', this.image, (e) => e.preventDefault());
+            multiEventListener('click', this.imageInput, () => this.fileInput.click());
+            multiEventListener('click', document.getElementById("restoreDefault"), () => restoreDefault());
+            multiEventListener('click', this.pathButton, () => this.togglePath());
+            multiEventListener('click', this.pointButton, () => this.togglePoint());
+            multiEventListener('change', this.fileInput, () => this.loadNewImage());
+            multiEventListener('dragover', this.main, (e) => {
                 e.preventDefault()
                 e.dataTransfer.dropEffect = 'copy';
-                this.main.classList.add("lowOpacity");
+                this.main.classList.add('lowOpacity');
             });
-            ['dragleave', 'dragend'].forEach(ev => {
-                this.main.addEventListener(ev, (e) => {
-                    e.preventDefault();
-                    this.main.classList.remove("lowOpacity");
-                });
+            multiEventListener(['dragleave', 'dragend'], this.main, (e) => {
+                e.preventDefault();
+                this.main.classList.remove('lowOpacity');
             });
-            this.main.addEventListener('drop', (e) => {
+            multiEventListener('drop', this.main, (e) => {
                 e.preventDefault();
                 this.main.style.opacity = "1";
                 this.fileInput.files = e.dataTransfer.files;
                 let event = new Event('change');
                 this.fileInput.dispatchEvent(event);
             });
-            this.image.addEventListener('load', () => {
+            multiEventListener('load', this.image, () => {
                 document.querySelectorAll("[temp_thing='true']").forEach(e => e.remove());
                 document.querySelectorAll("button[class='disableme']").forEach(b => b.disabled = false);
 
@@ -128,7 +157,7 @@ function State() {
                 }
 
                 if (this.firstLoad) {
-                    window.addEventListener('resize', () => {
+                    multiEventListener('resize', window, () => {
                         updateSizeRatio();
                         drawLines();
                     });
@@ -136,7 +165,7 @@ function State() {
                     let selectedLine = null;
                     let offset = 0;
 
-                    canvas.addEventListener('mousedown', e => {
+                    multiEventListener('mousedown', canvas, (e) => {
                         let mouse = e.clientX - canvas.getBoundingClientRect().left;
                         let xTolerance = canvas.width * 0.02;
                         let yTolerance = canvas.height * 0.02;
@@ -159,7 +188,7 @@ function State() {
                         }
                     });
 
-                    canvas.addEventListener('mousemove', e => {
+                    multiEventListener('mousemove', canvas, (e) => {
                         if (selectedLine) {
                             let rect = canvas.getBoundingClientRect();
                             if (selectedLine.x) {
@@ -174,10 +203,10 @@ function State() {
                         }
                     });
 
-                    ['mouseup', 'mouseleave', 'mouseout'].forEach(ev => canvas.addEventListener(ev, e => {
+                    multiEventListener(['mouseup', 'mouseleave', 'mouseout'], canvas, (e) => {
                         e.preventDefault();
                         selectedLine = null;
-                    }));
+                    });
 
                     function moveLine(line, button) {
                         if (line.x) line.pos += hLineMoveSpeed * button.getAttribute("dir");
@@ -187,40 +216,38 @@ function State() {
 
                     let holdInterval;
 
-                    document.querySelectorAll("button[move='true']").forEach(btn => {
-                        ['mousedown', 'touchstart'].forEach(ev => {
-                            btn.addEventListener(ev, e => {
-                                e.preventDefault();
-                                holdInterval = setInterval(() => {
-                                    switch (e.target.getAttribute('btn-name')) {
-                                        case 'spltop': {
-                                            moveLine(splLines[0], e.target);
-                                            break;
-                                        }
-                                        case 'splbot': {
-                                            moveLine(splLines[1], e.target);
-                                            break;
-                                        }
-                                        case 'frtop': {
-                                            moveLine(freqLines[1], e.target);
-                                            break;
-                                        }
-                                        case 'frbot': {
-                                            moveLine(freqLines[0], e.target);
-                                            break;
-                                        }
+                    document.querySelectorAll("button[move='true']").forEach((btn) => {
+                        multiEventListener(['mousedown', 'touchstart'], btn, (e) => {
+                            e.preventDefault();
+                            holdInterval = setInterval(() => {
+                                switch (e.target.getAttribute('btn-name')) {
+                                    case 'spltop': {
+                                        moveLine(splLines[0], e.target);
+                                        break;
                                     }
-                                }, 50);
-                            });
+                                    case 'splbot': {
+                                        moveLine(splLines[1], e.target);
+                                        break;
+                                    }
+                                    case 'frtop': {
+                                        moveLine(freqLines[1], e.target);
+                                        break;
+                                    }
+                                    case 'frbot': {
+                                        moveLine(freqLines[0], e.target);
+                                        break;
+                                    }
+                                }
+                            }, 50);
                         });
 
-                        ['mouseup', 'mouseleave', 'mouseout', 'touchend', 'touchcancel'].forEach(ev => btn.addEventListener(ev, e => {
+                        multiEventListener(['mouseup', 'mouseleave', 'mouseout', 'touchend', 'touchcancel'], btn, (e) => {
                             e.preventDefault();
                             clearInterval(holdInterval);
-                        }));
+                        });
                     });
 
-                    this.image.addEventListener('click', e => {
+                    multiEventListener('click', this.image, (e) => {
                         const rect = this.image.getBoundingClientRect();
                         let x = e.clientX - rect.left;
                         let y = e.clientY - rect.top;
@@ -270,6 +297,8 @@ function State() {
                 }
                 drawLines();
             });
+
+            document.querySelectorAll("button[class='disableme']").forEach(b => b.disabled = true);
         }
 
         updateState(newState) {
@@ -430,33 +459,4 @@ function updateSizeRatio() {
 
 function updateLineWidth() {
     lineWidth = trace_canvas.height * 0.004;
-}
-
-function createWorker() {
-    if (!worker) {
-        clearPath();
-        worker = new Worker("./worker.js");
-        worker.onmessage = (e) => {
-            if (e.data['type'] === "done") {
-                const traceData = e.data['trace'];
-                if (traceData.size > 1) {
-                    const first = traceData.entries().next().value;
-                    beginPlot(first[0], first[1], e.data['colour']);
-                    for (const [x, y] of traceData) plotLine(x, y);
-                }
-                state.toggleTrace();
-            } else {
-                let a = document.createElement("a");
-                let url = URL.createObjectURL(new Blob([e.data['export']], {type: "text/plain;charset=utf-8"}));
-                a.href = url;
-                a.download = "trace.txt";
-                document.body.appendChild(a);
-                a.click();
-                setTimeout(() => {
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-                }, 0);
-            }
-        }
-    }
 }
