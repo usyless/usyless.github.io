@@ -1,38 +1,245 @@
 'use strict';
 
-const state = State();
+// global constants
+let svg = document.getElementById('trace');
+const image = document.getElementById('uploadedImage'),
 
-const trace_canvas = document.getElementById('traceCanvas');
-const trace_ctx = trace_canvas.getContext('2d');
+    pointButton = document.getElementById('selectPoint'),
+    pathButton = document.getElementById('selectPath'),
 
-const defaults = {
-    "colourTolerance": 50,
-    "maxLineHeightOffset": 0,
-    "maxJumpOffset": 0,
+    lineCanvas = document.getElementById('lineCanvas'),
 
-    "PPO": 48,
-    "delimitation": "tab",
-    "lowFRExport": 20,
-    "highFRExport": 20000,
-    "exportSPLPrecision": 3,
-    "exportFRPrecision": 5,
+    main = document.getElementById('main'),
 
-    "moveSpeedOffset": 0,
+    fileInput = document.getElementById('imageInput'),
 
-    "SPLTop": "",
-    "SPLBot": "",
-    "FRTop": "",
-    "FRBot": ""
-}
+    state = State(),
 
-let worker, hLineMoveSpeed, vLineMoveSpeed, freqLines, splLines, sizeRatio, lineWidth, imageData;
+    defaults = {
+        "colourTolerance": 50,
+        "maxLineHeightOffset": 0,
+        "maxJumpOffset": 0,
+
+        "PPO": 48,
+        "delimitation": "tab",
+        "lowFRExport": 20,
+        "highFRExport": 20000,
+        "exportSPLPrecision": 3,
+        "exportFRPrecision": 5,
+
+        "moveSpeedOffset": 0,
+
+        "SPLTop": "",
+        "SPLBot": "",
+        "FRTop": "",
+        "FRBot": ""
+    };
+
+// create global variables
+let worker, hLineMoveSpeed, vLineMoveSpeed, lines, sizeRatio, lineWidth, imageData;
+
+// call initial functions
 restoreDefault();
 createWorker();
 
+// functions
+const drawLines = getDrawLines();
+
+// assign event listeners
+multiEventListener('dragstart', image, (e) => e.preventDefault());
+multiEventListener('click', document.getElementById('imageInputDiv'), () => fileInput.click());
+multiEventListener('click', document.getElementById("restoreDefault"), () => restoreDefault());
+multiEventListener('click', pathButton, () => state.togglePath());
+multiEventListener('click', pointButton, () => state.togglePoint());
+multiEventListener('change', fileInput, () => state.loadNewImage());
+
+{ // Drag and drop stuff
+    multiEventListener('dragover', main, (e) => {
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'copy';
+        main.classList.add('lowOpacity');
+    });
+    multiEventListener(['dragleave', 'dragend'], main, (e) => {
+        e.preventDefault();
+        main.classList.remove('lowOpacity');
+    });
+    multiEventListener('drop', main, (e) => {
+        e.preventDefault();
+        main.style.opacity = "1";
+        fileInput.files = e.dataTransfer.files;
+        let event = new Event('change');
+        fileInput.dispatchEvent(event);
+    });
+}
+
+{ // magnifying glass stuff
+    const glass = document.getElementById('glass');
+    multiEventListener(['mousemove'], image, (e) => {
+        e.preventDefault();
+        const parentRect = image.parentElement.getBoundingClientRect(),
+            m = getMouseCoords(e);
+        glass.style.left = `${m.x - parentRect.left}px`;
+        glass.style.top = `${m.y - parentRect.top}px`;
+        const v = (Math.floor((m.yRel) * sizeRatio) * imageData.width * 4) + (Math.floor((m.xRel) * sizeRatio) * 4);
+        glass.style.backgroundColor = `rgb(${imageData.data[v]}, ${imageData.data[v + 1]}, ${imageData.data[v + 2]})`;
+        glass.classList.remove('hidden');
+    });
+    multiEventListener(['mouseup', 'mouseleave', 'mouseout', 'touchend', 'touchcancel'], image, () => glass.classList.add('hidden'));
+}
+
+multiEventListener('load', image, () => {
+    document.querySelectorAll("[temp_thing='true']").forEach((e) => e.remove());
+    document.querySelectorAll("button[class='disableme']").forEach((b) => b.disabled = false);
+
+    lineCanvas.width = image.naturalWidth;
+    lineCanvas.height = image.naturalHeight;
+    svg.setAttribute("width", image.naturalWidth);
+    svg.setAttribute("height", image.naturalHeight);
+    svg.setAttribute("viewBox", `0 0 ${image.naturalWidth} ${image.naturalHeight}`);
+
+    updateSizeRatio();
+    updateLineWidth();
+    updateLineMoveSpeed();
+    setUpImageData();
+
+    lines = [
+        {pos: lineCanvas.width * 0.1, type: "Low", dir: "x"},
+        {pos: lineCanvas.width * 0.9, type: "High", dir: "x"},
+        {pos: lineCanvas.height * 0.1, type: "High", dir: "y"},
+        {pos: lineCanvas.height * 0.9, type: "Low", dir: "y"}
+    ]
+
+    drawLines();
+});
+
+multiEventListener('resize', window, () => {
+    updateSizeRatio();
+    drawLines();
+});
+
+{ // Move canvas lines with mouse
+    let selectedLine = null, offset = 0;
+
+    multiEventListener('mousedown', lineCanvas, (e) => {
+        const m = getMouseCoords(e);
+        let t;
+
+        for (const line of lines) {
+            if (line.dir === "x") t = lineCanvas.width * 0.02;
+            else t = lineCanvas.height * 0.02;
+            offset = m[`${line.dir}Rel`] * sizeRatio - line.pos;
+            if (Math.abs(offset) < t) {
+                selectedLine = line;
+                return;
+            }
+        }
+    });
+
+    multiEventListener('mousemove', lineCanvas, (e) => {
+        if (selectedLine) {
+            const m = getMouseCoords(e);
+            selectedLine.pos = Math.floor(m[`${selectedLine.dir}Rel`] * sizeRatio - offset);
+            drawLines();
+        }
+    });
+
+    multiEventListener(['mouseup', 'mouseleave', 'mouseout'], lineCanvas, (e) => {
+        e.preventDefault();
+        selectedLine = null;
+    });
+}
+
+{ // Move lines on canvas with buttons
+    function moveLine(line, button) {
+        if (line.dir === "x") line.pos += hLineMoveSpeed * button.getAttribute("dir");
+        else line.pos += vLineMoveSpeed * button.getAttribute("dir");
+        drawLines();
+    }
+    let holdInterval;
+    document.querySelectorAll("button[move='true']").forEach((btn) => {
+        multiEventListener(['mousedown', 'touchstart'], btn, (e) => {
+            e.preventDefault();
+            holdInterval = setInterval(() => {
+                switch (e.target.getAttribute('btn-name')) {
+                    case 'spltop': {
+                        moveLine(lines[2], e.target);
+                        break;
+                    }
+                    case 'splbot': {
+                        moveLine(lines[3], e.target);
+                        break;
+                    }
+                    case 'frtop': {
+                        moveLine(lines[1], e.target);
+                        break;
+                    }
+                    case 'frbot': {
+                        moveLine(lines[0], e.target);
+                        break;
+                    }
+                }
+            }, 50);
+        });
+
+        multiEventListener(['mouseup', 'mouseleave', 'mouseout', 'touchend', 'touchcancel'], btn, (e) => {
+            e.preventDefault();
+            clearInterval(holdInterval);
+        });
+    });
+}
+
+multiEventListener('click', image, (e) => {
+    const m = getMouseCoords(e),
+        x = m.xRel * sizeRatio,
+        y = m.yRel * sizeRatio;
+
+    if (state.checkState(state.States.selectingPath)) {
+        state.toggleTrace();
+        worker.postMessage({
+            type: 'trace',
+            x: x,
+            y: y,
+            lineHeightOffset: document.getElementById("maxLineHeightOffset").value,
+            colourTolerance: document.getElementById("colourTolerance").value,
+            maxJumpOffset: document.getElementById("maxJumpOffset").value
+        });
+    } else {
+        state.toggleTrace();
+        worker.postMessage({
+            type: 'point',
+            x: x,
+            y: y
+        });
+    }
+});
+
+// disable buttons with no image loaded
+document.querySelectorAll("button[class='disableme']").forEach(b => b.disabled = true);
+
 function State() {
-    function multiEventListener(events, target, callback) {
-        if (typeof (events) !== "object") events = [events];
-        events.forEach((ev) => target.addEventListener(ev, callback));
+    const overlay = document.getElementById('overlay');
+
+    function startImageEditing() {
+        document.querySelectorAll("button[move='true']").forEach((b) => b.disabled = true);
+        image.classList.add("crosshair_hover");
+        image.classList.remove("removePointerEvents");
+        lineCanvas.classList.add("removePointerEvents");
+        lineCanvas.classList.add("hidden");
+    }
+
+    function stopImageEditing() {
+        document.querySelectorAll("button[move='true']").forEach((b) => b.disabled = false);
+        image.classList.remove("crosshair_hover");
+        image.classList.add("removePointerEvents");
+        lineCanvas.classList.remove("removePointerEvents");
+        lineCanvas.classList.remove("hidden");
+    }
+
+    function buttonsToDefault() {
+        [pathButton, pointButton].forEach(btn => {
+            btn.disabled = false;
+            btn.innerText = btn.getAttribute("def");
+        });
     }
 
     class State {
@@ -43,240 +250,6 @@ function State() {
             selectingPoint: 3
         }
         state = this.States.initial;
-        firstLoad = true;
-        pathButton = document.getElementById('selectPath');
-        pointButton = document.getElementById('selectPoint');
-        image = document.getElementById('uploadedImage');
-        canvas = document.getElementById('lineCanvas');
-        fileInput = document.getElementById('imageInput');
-        main = document.getElementById('main');
-        overlay = document.getElementById('overlay');
-        glass = document.getElementById('glass');
-
-        constructor() {
-            multiEventListener('dragstart', this.image, (e) => e.preventDefault());
-            multiEventListener('click', document.getElementById('imageInputDiv'), () => this.fileInput.click());
-            multiEventListener('click', document.getElementById("restoreDefault"), () => restoreDefault());
-            multiEventListener('click', this.pathButton, () => this.togglePath());
-            multiEventListener('click', this.pointButton, () => this.togglePoint());
-            multiEventListener('change', this.fileInput, () => this.loadNewImage());
-            multiEventListener('dragover', this.main, (e) => {
-                e.preventDefault()
-                e.dataTransfer.dropEffect = 'copy';
-                this.main.classList.add('lowOpacity');
-            });
-            multiEventListener(['dragleave', 'dragend'], this.main, (e) => {
-                e.preventDefault();
-                this.main.classList.remove('lowOpacity');
-            });
-            multiEventListener('drop', this.main, (e) => {
-                e.preventDefault();
-                this.main.style.opacity = "1";
-                this.fileInput.files = e.dataTransfer.files;
-                let event = new Event('change');
-                this.fileInput.dispatchEvent(event);
-            });
-            multiEventListener(['mousemove'], this.image, (e) => {
-                e.preventDefault();
-                const parentRect = this.image.parentElement.getBoundingClientRect(),
-                    rect = this.image.getBoundingClientRect(),
-                    x = e.clientX,
-                    y = e.clientY;
-                this.glass.style.left = `${x - parentRect.left}px`;
-                this.glass.style.top = `${y - parentRect.top}px`;
-                const v = (Math.floor((y - rect.top) * sizeRatio) * imageData.width * 4) + (Math.floor((x - rect.left) * sizeRatio) * 4);
-                this.glass.style.backgroundColor = `rgb(${imageData.data[v]}, ${imageData.data[v + 1]}, ${imageData.data[v + 2]})`;
-                this.glass.classList.remove('hidden');
-            });
-            multiEventListener(['mouseup', 'mouseleave', 'mouseout', 'touchend', 'touchcancel'], this.image, () => this.glass.classList.add('hidden'));
-            multiEventListener('load', this.image, () => {
-                document.querySelectorAll("[temp_thing='true']").forEach((e) => e.remove());
-                document.querySelectorAll("button[class='disableme']").forEach((b) => b.disabled = false);
-
-                document.querySelectorAll("canvas").forEach((canvas) => {
-                    canvas.width = this.image.naturalWidth;
-                    canvas.height = this.image.naturalHeight;
-                });
-                updateSizeRatio();
-                updateLineWidth();
-                updateLineMoveSpeed();
-
-                const canvas = this.canvas;
-                const context = canvas.getContext('2d');
-                context.fillStyle = '#ff0000';
-
-                freqLines = [
-                    {pos: canvas.width * 0.1, type: "Low", x: "hello"},
-                    {pos: canvas.width * 0.9, type: "High", x: "hello"}
-                ];
-                splLines = [
-                    {pos: canvas.height * 0.1, type: "High"},
-                    {pos: canvas.height * 0.9, type: "Low"}
-                ];
-
-                {
-                    const processing_canvas = document.createElement("canvas");
-                    const processing_context = processing_canvas.getContext('2d');
-                    processing_canvas.width = this.image.naturalWidth;
-                    processing_canvas.height = this.image.naturalHeight;
-
-                    const image = new Image;
-                    image.src = this.image.src;
-                    processing_context.drawImage(image, 0, 0);
-                    imageData = processing_context.getImageData(0, 0, image.naturalWidth, image.naturalHeight);
-                    worker.postMessage({
-                        type: 'setData',
-                        imageData: imageData
-                    });
-                }
-
-                function drawLines() {
-                    context.clearRect(0, 0, canvas.width, canvas.height);
-                    context.font = `${1.3 * sizeRatio}rem arial`
-                    context.lineWidth = sizeRatio;
-
-                    freqLines.forEach(line => {
-                        context.strokeStyle = 'green';
-                        context.beginPath();
-                        line.pos = Math.floor(Math.max(canvas.width * 0.02, Math.min(canvas.width * 0.98, line.pos)));
-                        context.moveTo(line.pos, 0);
-                        context.lineTo(line.pos, canvas.height);
-                        context.stroke();
-                        context.fillText(line.type, line.pos + 5, canvas.height * 0.5);
-                    });
-                    splLines.forEach(line => {
-                        context.strokeStyle = 'blue';
-                        context.beginPath();
-                        line.pos = Math.floor(Math.max(canvas.height * 0.02, Math.min(canvas.height * 0.98, line.pos)));
-                        context.moveTo(0, line.pos);
-                        context.lineTo(canvas.width, line.pos);
-                        context.stroke();
-                        context.fillText(line.type, canvas.width * 0.5, line.pos - 5);
-                    });
-                }
-
-                if (this.firstLoad) {
-                    multiEventListener('resize', window, () => {
-                        updateSizeRatio();
-                        drawLines();
-                    });
-
-                    let selectedLine = null;
-                    let offset = 0;
-
-                    multiEventListener('mousedown', canvas, (e) => {
-                        let mouse = e.clientX - canvas.getBoundingClientRect().left;
-                        let xTolerance = canvas.width * 0.02;
-                        let yTolerance = canvas.height * 0.02;
-
-                        for (let line of freqLines) {
-                            if (Math.abs(mouse * sizeRatio - line.pos) < xTolerance) {
-                                selectedLine = line;
-                                offset = mouse * sizeRatio - line.pos;
-                                return;
-                            }
-                        }
-
-                        mouse = e.clientY - canvas.getBoundingClientRect().top;
-                        for (let line of splLines) {
-                            if (Math.abs(mouse * sizeRatio - line.pos) < yTolerance) {
-                                selectedLine = line;
-                                offset = mouse * sizeRatio - line.pos;
-                                return;
-                            }
-                        }
-                    });
-
-                    multiEventListener('mousemove', canvas, (e) => {
-                        if (selectedLine) {
-                            let rect = canvas.getBoundingClientRect();
-                            if (selectedLine.x) {
-                                let mouse = e.clientX - rect.left;
-                                selectedLine.pos = Math.floor(mouse * sizeRatio - offset);
-                                drawLines();
-                            } else if (selectedLine.pos) {
-                                let mouse = e.clientY - rect.top;
-                                selectedLine.pos = Math.floor(mouse * sizeRatio - offset);
-                                drawLines();
-                            }
-                        }
-                    });
-
-                    multiEventListener(['mouseup', 'mouseleave', 'mouseout'], canvas, (e) => {
-                        e.preventDefault();
-                        selectedLine = null;
-                    });
-
-                    function moveLine(line, button) {
-                        if (line.x) line.pos += hLineMoveSpeed * button.getAttribute("dir");
-                        else line.pos += vLineMoveSpeed * button.getAttribute("dir");
-                        drawLines();
-                    }
-
-                    let holdInterval;
-
-                    document.querySelectorAll("button[move='true']").forEach((btn) => {
-                        multiEventListener(['mousedown', 'touchstart'], btn, (e) => {
-                            e.preventDefault();
-                            holdInterval = setInterval(() => {
-                                switch (e.target.getAttribute('btn-name')) {
-                                    case 'spltop': {
-                                        moveLine(splLines[0], e.target);
-                                        break;
-                                    }
-                                    case 'splbot': {
-                                        moveLine(splLines[1], e.target);
-                                        break;
-                                    }
-                                    case 'frtop': {
-                                        moveLine(freqLines[1], e.target);
-                                        break;
-                                    }
-                                    case 'frbot': {
-                                        moveLine(freqLines[0], e.target);
-                                        break;
-                                    }
-                                }
-                            }, 50);
-                        });
-
-                        multiEventListener(['mouseup', 'mouseleave', 'mouseout', 'touchend', 'touchcancel'], btn, (e) => {
-                            e.preventDefault();
-                            clearInterval(holdInterval);
-                        });
-                    });
-
-                    multiEventListener('click', this.image, (e) => {
-                        const rect = this.image.getBoundingClientRect(),
-                            x = (e.clientX - rect.left) * sizeRatio,
-                            y = (e.clientY - rect.top) * sizeRatio;
-
-                        if (this.checkState(this.States.selectingPath)) {
-                            this.toggleTrace();
-                            worker.postMessage({
-                                type: 'trace',
-                                x: x,
-                                y: y,
-                                lineHeightOffset: document.getElementById("maxLineHeightOffset").value,
-                                colourTolerance: document.getElementById("colourTolerance").value,
-                                maxJumpOffset: document.getElementById("maxJumpOffset").value
-                            });
-                        } else {
-                            this.toggleTrace();
-                            worker.postMessage({
-                                type: 'point',
-                                x: x,
-                                y: y
-                            });
-                        }
-                    });
-                    this.firstLoad = false;
-                }
-                drawLines();
-            });
-
-            document.querySelectorAll("button[class='disableme']").forEach(b => b.disabled = true);
-        }
 
         updateState(newState) {
             this.state = newState;
@@ -288,86 +261,53 @@ function State() {
             return false;
         }
 
-        startImageEditing() {
-            this.image.classList.add("crosshair_hover");
-            this.image.classList.remove("removePointerEvents");
-            this.canvas.classList.add("removePointerEvents");
-            this.canvas.classList.add("hidden");
-        }
-
-        stopImageEditing() {
-            this.image.classList.remove("crosshair_hover");
-            this.image.classList.add("removePointerEvents");
-            this.canvas.classList.remove("removePointerEvents");
-            this.canvas.classList.remove("hidden");
-        }
-
-        buttonsToDefault() {
-            [this.pathButton, this.pointButton].forEach(btn => {
-                btn.disabled = false;
-                btn.innerText = btn.getAttribute("def");
-            });
-        }
-
         loadNewImage() {
-            this.buttonsToDefault();
-            this.stopImageEditing();
-            this.image.src = URL.createObjectURL(document.getElementById('imageInput').files[0]);
+            buttonsToDefault();
+            stopImageEditing();
+            image.src = URL.createObjectURL(document.getElementById('imageInput').files[0]);
             this.updateState(this.States.imageLoaded);
             clearPath();
         }
 
         togglePath() {
-            this.buttonsToDefault();
+            buttonsToDefault();
             if (this.checkState([this.States.imageLoaded, this.States.selectingPoint])) {
-                this.startImageEditing();
-                this.pathButton.innerText = this.pathButton.getAttribute("alt");
+                startImageEditing();
+                pathButton.innerText = pathButton.getAttribute("alt");
                 this.updateState(this.States.selectingPath);
             } else if (this.checkState(this.States.selectingPath)) {
-                this.stopImageEditing();
+                stopImageEditing();
                 this.updateState(this.States.imageLoaded);
             }
         }
 
         togglePoint() {
-            this.buttonsToDefault();
+            buttonsToDefault();
             if (this.checkState([this.States.imageLoaded, this.States.selectingPath])) {
-                this.startImageEditing();
-                this.pointButton.innerText = this.pointButton.getAttribute("alt");
+                startImageEditing();
+                pointButton.innerText = pointButton.getAttribute("alt");
                 this.updateState(this.States.selectingPoint);
             } else if (this.checkState(this.States.selectingPoint)) {
-                this.stopImageEditing();
+                stopImageEditing();
                 this.updateState(this.States.imageLoaded);
             }
         }
 
         toggleTrace() {
-            this.overlay.classList.toggle("hidden");
-            this.main.classList.toggle("lowOpacity");
-            this.main.classList.toggle("not_allowed");
-            this.main.classList.toggle("removePointerEvents");
+            overlay.classList.toggle("hidden");
+            main.classList.toggle("lowOpacity");
+            main.classList.toggle("not_allowed");
+            main.classList.toggle("removePointerEvents");
         }
     }
 
     return new State();
 }
 
-function beginPlot(beginX, beginY, colour = '#ff0000') {
-    clearPath("lmfao");
-    trace_ctx.beginPath();
-    trace_ctx.moveTo(beginX, beginY);
-    trace_ctx.strokeStyle = colour;
-}
-
-function plotLine(toX, toY) {
-    trace_ctx.lineWidth = lineWidth;
-    trace_ctx.lineTo(toX, toY);
-    trace_ctx.stroke();
-}
-
 function clearPath(no) { // put in a random string to not post to worker
-    trace_ctx.clearRect(0, 0, trace_canvas.width, trace_canvas.height);
-    trace_ctx.beginPath();
+    const newSvg = svg.cloneNode(false);
+    svg.parentElement.replaceChild(newSvg, svg);
+    svg = newSvg;
     if (worker && !no) worker.postMessage({type: "clear"});
 }
 
@@ -388,15 +328,15 @@ function exportTrace() {
         type: "export",
         SPL: {
             top: SPLTop,
-            topPixel: splLines[0].pos,
+            topPixel: lines[2].pos,
             bottom: SPLBot,
-            bottomPixel: splLines[1].pos
+            bottomPixel: lines[3].pos
         },
         FR: {
             top: FRTop,
-            topPixel: freqLines[1].pos,
+            topPixel: lines[1].pos,
             bottom: FRBot,
-            bottomPixel: freqLines[0].pos,
+            bottomPixel: lines[0].pos,
         },
         lowFR: document.getElementById("lowFRExport").value,
         highFR: document.getElementById("highFRExport").value,
@@ -425,16 +365,16 @@ function restoreDefault() {
 }
 
 function updateLineMoveSpeed() {
-    hLineMoveSpeed = Math.max(1, parseInt(document.getElementById("moveSpeedOffset").value) + Math.floor(trace_canvas.width * 0.004));
-    vLineMoveSpeed = Math.max(1, parseInt(document.getElementById("moveSpeedOffset").value) + Math.floor(trace_canvas.height * 0.004));
+    hLineMoveSpeed = Math.max(1, parseInt(document.getElementById("moveSpeedOffset").value) + Math.floor(image.naturalWidth * 0.004));
+    vLineMoveSpeed = Math.max(1, parseInt(document.getElementById("moveSpeedOffset").value) + Math.floor(image.naturalHeight * 0.004));
 }
 
 function updateSizeRatio() {
-    sizeRatio = trace_canvas.width / trace_canvas.clientWidth;
+    sizeRatio = image.naturalWidth / image.clientWidth;
 }
 
 function updateLineWidth() {
-    lineWidth = trace_canvas.height * 0.004;
+    lineWidth = image.naturalHeight * 0.006;
 }
 
 function createWorker() {
@@ -443,11 +383,19 @@ function createWorker() {
         worker = new Worker("./worker.js");
         worker.onmessage = (e) => {
             if (e.data['type'] === "done") {
+                clearPath("lmfao");
                 const traceData = e.data['trace'];
-                if (traceData.size > 1) {
-                    const first = traceData.entries().next().value;
-                    beginPlot(first[0], first[1], e.data['colour']);
-                    for (const [x, y] of traceData) plotLine(x, y);
+                if (traceData.length > 1) {
+                    for (let i = 0; i < traceData.length - 1; i++) {
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', traceData[i][0]);
+                        line.setAttribute('y1', traceData[i][1]);
+                        line.setAttribute('x2', traceData[i + 1][0]);
+                        line.setAttribute('y2', traceData[i + 1][1]);
+                        line.setAttribute('stroke', e.data['colour']);
+                        line.setAttribute('stroke-width', lineWidth);
+                        svg.appendChild(line);
+                    }
                 }
                 state.toggleTrace();
             } else {
@@ -464,4 +412,69 @@ function createWorker() {
             }
         }
     }
+}
+
+function multiEventListener(events, target, callback) {
+    if (typeof (events) !== "object") events = [events];
+    events.forEach((ev) => target.addEventListener(ev, callback));
+}
+
+function getDrawLines() {
+    const lineCanvasCtx = lineCanvas.getContext("2d");
+    let c, posCheck;
+
+    function drawLines() {
+        lineCanvasCtx.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
+        lineCanvasCtx.font = `${1.3 * sizeRatio}rem arial`
+        lineCanvasCtx.lineWidth = sizeRatio;
+        lineCanvasCtx.fillStyle = '#ff0000';
+
+        lines.forEach((line) => {
+            lineCanvasCtx.beginPath();
+            if (line.dir === "x") {
+                c = 'green';
+                posCheck = lineCanvas.width;
+                lineCanvasCtx.moveTo(line.pos, 0);
+                lineCanvasCtx.lineTo(line.pos, lineCanvas.height);
+                lineCanvasCtx.fillText(line.type, line.pos + 5, lineCanvas.height * 0.5);
+            } else {
+                c = 'blue';
+                posCheck = lineCanvas.height;
+                lineCanvasCtx.moveTo(0, line.pos);
+                lineCanvasCtx.lineTo(lineCanvas.width, line.pos);
+                lineCanvasCtx.fillText(line.type, lineCanvas.width * 0.5, line.pos - 5);
+            }
+            lineCanvasCtx.strokeStyle = c;
+            line.pos = Math.floor(Math.max(posCheck * 0.02, Math.min(posCheck * 0.98, line.pos)));
+            lineCanvasCtx.stroke();
+        });
+    }
+
+    return drawLines;
+}
+
+function getMouseCoords(e) {
+    const r = image.getBoundingClientRect(), x = e.clientX, y = e.clientY;
+    return {
+        x: x,
+        y: y,
+        xRel: x - r.left,
+        yRel: y - r.top
+    }
+}
+
+function setUpImageData() {
+    const processing_canvas = document.createElement("canvas");
+    const processing_context = processing_canvas.getContext('2d');
+    processing_canvas.width = image.naturalWidth;
+    processing_canvas.height = image.naturalHeight;
+
+    const new_image = new Image;
+    new_image.src = image.src;
+    processing_context.drawImage(new_image, 0, 0);
+    imageData = processing_context.getImageData(0, 0, new_image.naturalWidth, new_image.naturalHeight);
+    worker.postMessage({
+        type: 'setData',
+        imageData: imageData
+    });
 }

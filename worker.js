@@ -2,7 +2,7 @@
 
 let imageData;
 let currentTrace = new Map();
-let simplifiedTrace = new Map();
+let simplifiedTrace = [];
 let previousTrace = new Map();
 let traceColour = '#ff0000';
 let previousColour;
@@ -14,7 +14,7 @@ onmessage = (e) => {
     switch (e.data['type']) {
         case "clear": {
             currentTrace.clear();
-            simplifiedTrace.clear();
+            simplifiedTrace = [];
             traceColour = '#ff0000';
             break;
         }
@@ -25,32 +25,31 @@ onmessage = (e) => {
             break;
         }
         case "export": {
-            const lowFR = parseInt(e.data['lowFR']),
-                highFR = parseInt(e.data['highFR']),
+            const lowFR = parseFloat(e.data['lowFR']),
+                highFR = parseFloat(e.data['highFR']),
                 FRPrecision = parseInt(e.data['FRPrecision']),
                 SPLPrecision = parseInt(e.data['SPLPrecision']);
 
             // SPL Stuff
             const SPL = e.data['SPL'],
-                SPLBot = parseInt(SPL['bottom']),
-                SPLBotPixel = parseInt(SPL['bottomPixel']),
+                SPLBot = parseFloat(SPL['bottom']),
+                SPLBotPixel = parseFloat(SPL['bottomPixel']),
             // (top SPL value - bottom SPL value) / (top SPL pixel - bottom SPL pixel)
-                SPLRatio = (parseInt(SPL['top']) - SPLBot) / (parseInt(SPL['topPixel']) - SPLBotPixel);
+                SPLRatio = (parseFloat(SPL['top']) - SPLBot) / (parseFloat(SPL['topPixel']) - SPLBotPixel);
 
             // FR Stuff
             const FR = e.data['FR'],
-                FRBotPixel = parseInt(FR['bottomPixel']),
-                logFRBot = Math.log10(parseInt(FR['bottom'])),
+                FRBotPixel = parseFloat(FR['bottomPixel']),
+                logFRBot = Math.log10(parseFloat(FR['bottom'])),
             // (log10(top FR value) - log10(bottom FR value)) / (top FR pixel - bottom FR pixel)
-                FRRatio = (Math.log10(parseInt(FR['top'])) - logFRBot) / (parseInt(FR['topPixel']) - FRBotPixel);
+                FRRatio = (Math.log10(parseFloat(FR['top'])) - logFRBot) / (parseFloat(FR['topPixel']) - FRBotPixel);
 
             const export_string = new exportString(e.data['delim']);
 
-            let FRxSPL = [];
-            for (const entry of simplifiedTrace) {
-                FRxSPL.push([Math.pow(10, ((parseInt(entry[0]) - FRBotPixel) * FRRatio) + logFRBot),
-                    ((parseInt(entry[1]) - SPLBotPixel) * SPLRatio) + SPLBot]);
-            }
+            const FRxSPL = simplifiedTrace.map(([x, y]) => [
+                Math.pow(10, ((parseFloat(x) - FRBotPixel) * FRRatio) + logFRBot),
+                ((parseFloat(y) - SPLBotPixel) * SPLRatio) + SPLBot]
+            );
 
             const PPO = Math.log10(Math.pow(2, 1 / parseInt(e.data['PPO'])));
             const splFunc = contiguousLinearInterpolation(FRxSPL);
@@ -178,9 +177,9 @@ ${freq.toString()}${this.delim}${spl.toString()}`
 function cleanUpData() {
     if (currentTrace.size > 2) {
         currentTrace = new Map([...currentTrace.entries()].sort((a, b) => a[0] - b[0]));
-        simplifiedTrace = new Map();
+        simplifiedTrace = []
         let z, avg, n = currentTrace.entries().next().value[0], identity = [], finalKey, finalValue;
-        simplifiedTrace.set(n, currentTrace.get(n));
+        simplifiedTrace.push([n, currentTrace.get(n)]);
         for (let i = n + 1; i < imageData.width; i++) {
             z = currentTrace.get(i);
             if (z) {
@@ -191,18 +190,18 @@ function cleanUpData() {
                     identity.push(j);
                 }
                 if (identity.length === 1) {
-                    simplifiedTrace.set(i, currentTrace.get(i));
+                    simplifiedTrace.push([i, z]);
                 } else {
                     avg = identity.reduce((a, b) => a + b, 0) / identity.length;
-                    simplifiedTrace.set(avg, currentTrace.get(i));
+                    simplifiedTrace.push([avg, z]);
                     i += identity.length - 1;
                 }
             }
         }
-        simplifiedTrace.set(finalKey, finalValue);
+        if (simplifiedTrace[simplifiedTrace.length - 1][0] !== finalKey) simplifiedTrace.push([finalKey, finalValue]);
     }
     else {
-        simplifiedTrace = currentTrace;
+        simplifiedTrace = Array.from(currentTrace);
     }
 }
 
