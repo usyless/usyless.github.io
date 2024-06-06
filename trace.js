@@ -421,7 +421,6 @@ function multiEventListener(events, target, callback) {
 
 function getDrawLines() {
     const lineCanvasCtx = lineCanvas.getContext("2d");
-    let c, posCheck;
 
     function drawLines() {
         lineCanvasCtx.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
@@ -429,25 +428,23 @@ function getDrawLines() {
         lineCanvasCtx.lineWidth = sizeRatio;
         lineCanvasCtx.fillStyle = '#ff0000';
 
-        lines.forEach((line) => {
+        for (const line of lines) {
             lineCanvasCtx.beginPath();
             if (line.dir === "x") {
-                c = 'green';
-                posCheck = lineCanvas.width;
+                lineCanvasCtx.strokeStyle = 'green';
+                line.pos = Math.floor(Math.max(lineCanvas.width * 0.02, Math.min(lineCanvas.width * 0.98, line.pos)));
                 lineCanvasCtx.moveTo(line.pos, 0);
                 lineCanvasCtx.lineTo(line.pos, lineCanvas.height);
                 lineCanvasCtx.fillText(line.type, line.pos + 5, lineCanvas.height * 0.5);
             } else {
-                c = 'blue';
-                posCheck = lineCanvas.height;
+                lineCanvasCtx.strokeStyle = 'blue';
+                line.pos = Math.floor(Math.max(lineCanvas.height * 0.02, Math.min(lineCanvas.height * 0.98, line.pos)));
                 lineCanvasCtx.moveTo(0, line.pos);
                 lineCanvasCtx.lineTo(lineCanvas.width, line.pos);
                 lineCanvasCtx.fillText(line.type, lineCanvas.width * 0.5, line.pos - 5);
             }
-            lineCanvasCtx.strokeStyle = c;
-            line.pos = Math.floor(Math.max(posCheck * 0.02, Math.min(posCheck * 0.98, line.pos)));
             lineCanvasCtx.stroke();
-        });
+        }
     }
 
     return drawLines;
