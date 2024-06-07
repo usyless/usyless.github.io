@@ -93,6 +93,7 @@ multiEventListener('load', image, () => {
     ]
 
     createLines();
+    state.autoPath();
 });
 
 multiEventListener('resize', window, () => {
