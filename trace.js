@@ -181,6 +181,16 @@ function State() {
             clearPathAndWorker();
         }
 
+        autoPath() {
+            this.toggleTrace();
+            worker.postMessage({
+                type: 'auto',
+                lineHeightOffset: document.getElementById("maxLineHeightOffset").value,
+                colourTolerance: document.getElementById("colourTolerance").value,
+                maxJumpOffset: document.getElementById("maxJumpOffset").value
+            });
+        }
+
         togglePath() {
             buttonsToDefault();
             if (this.checkState([this.States.imageLoaded, this.States.selectingPoint])) {
@@ -480,4 +490,8 @@ function restoreDefault() {
     for (const val in defaults) {
         document.getElementById(val).value = defaults[val];
     }
+}
+
+function autoPath() {
+    state.autoPath();
 }

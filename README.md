@@ -7,11 +7,14 @@
 ## General use
 - Press "Choose Image" and choose an image to trace from
 - Align the top and bottom lines for SPL and Frequency to known values, then input those in the sidebar
+- Click "Auto Trace"
+- Press "Export Trace"
+
+### If auto trace fails
 - Click "Select Path", then click on your line to trace
 - If you find that it hasn't selected the whole line, you can click on the region it has not selected to try to select more (Adjust settings as a last resort)
 - Made a mistake? The undo button can bring you back one trace
 - Use "Add Point" to add points manually to the trace
-- Once you're done, press "Export Trace"
 
 ### Mobile Specifics
 - Move the SPL and Frequency lines by using the buttons, selecting the line to trace works as normal but may require more tries
