@@ -51,12 +51,13 @@ onmessage = (e) => {
                 ((parseFloat(y) - SPLBotPixel) * SPLRatio) + SPLBot]
             );
 
-            const PPO = Math.log10(Math.pow(2, 1 / parseInt(e.data['PPO'])));
-            const splFunc = contiguousLinearInterpolation(FRxSPL);
+            const PPO = Math.log10(Math.pow(2, 1 / parseInt(e.data['PPO']))),
+                splFunc = contiguousLinearInterpolation(FRxSPL),
+                h = Math.log10(highFR);
             for (let v = Math.log10(lowFR);; v += PPO) {
                 const freq = Math.pow(10, v);
                 export_string.addData(freq.toFixed(FRPrecision), splFunc(freq).toFixed(SPLPrecision));
-                if (v >= Math.log10(highFR)) break;
+                if (v >= h) break;
             }
 
             postMessage({
@@ -180,15 +181,18 @@ function cleanUpData() {
         simplifiedTrace = []
         let z, avg, n = currentTrace.entries().next().value[0], identity = [], finalKey, finalValue;
         simplifiedTrace.push([n, currentTrace.get(n)]);
-        for (let i = n + 1; i < imageData.width; i++) {
+        const l = imageData.width;
+        for (let i = n + 1; i < l; i++) {
             z = currentTrace.get(i);
             if (z) {
                 finalValue = z;
                 identity = [];
-                for (let j = i; currentTrace.get(j) === z; j++) {
+                let j = i
+                do {
                     finalKey = j;
                     identity.push(j);
-                }
+                    j++;
+                } while (currentTrace.get(j) === z)
                 if (identity.length === 1) {
                     simplifiedTrace.push([i, z]);
                 } else {
@@ -220,7 +224,8 @@ function contiguousLinearInterpolation(FRxSPL) {
     const firstF = FRxSPL[0][0],
         lastF = FRxSPL[FRxSPL.length - 1][0],
         firstV = FRxSPL[0][1],
-        lastV = FRxSPL[FRxSPL.length - 1][1];
+        lastV = FRxSPL[FRxSPL.length - 1][1],
+        l = FRxSPL.length;
 
     let i = 0;
 
@@ -229,7 +234,7 @@ function contiguousLinearInterpolation(FRxSPL) {
         else if (f >= lastF) return lastV;
         else {
             let lower, upper;
-            for (; i < FRxSPL.length; i++) {
+            for (; i < l; i++) {
                 if (FRxSPL[i][0] < f) lower = FRxSPL[i];
                 else if (FRxSPL[i][0] > f) {
                     upper = FRxSPL[i];

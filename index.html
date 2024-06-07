@@ -17,16 +17,16 @@
         <div>
             <h1>UsyTrace</h1>
         </div>
-        <div class="divButton sidebarSection" id="imageInputDiv">
-            <input type='file' id='imageInput' class="hidden" accept="image/*"/>
+        <div onclick="clickFileInput()" class="divButton sidebarSection" id="imageInputDiv">
+            <input onchange="loadNewImage()" type='file' id='imageInput' class="hidden" accept="image/*"/>
             <label>Choose Image</label>
         </div>
         <div class="sidebarSection">
             <div>
-                <button id="selectPath" def="Select Path" alt="Stop Selecting" class="disableme">Select Path</button>
+                <button onclick="togglePath()" id="selectPath" def="Select Path" alt="Stop Selecting" class="disableme">Select Path</button>
             </div>
             <div>
-                <button id="selectPoint" def="Add Point" alt="Stop Adding Points" class="disableme">Add Point</button>
+                <button onclick="togglePoint()" id="selectPoint" def="Add Point" alt="Stop Adding Points" class="disableme">Add Point</button>
             </div>
             <div>
                 <button onclick="clearPath()" class="disableme">Clear Path</button>
@@ -45,8 +45,8 @@
                     <input type="number" id="SPLTop"/>
                 </div>
                 <div class="moveButtons">
-                    <button move="true" btn-name="spltop" dir="1" class="disableme">▼</button>
-                    <button move="true" btn-name="spltop" dir="-1" class="disableme">▲</button>
+                    <button i="2" dir="1" class="disableme">▼</button>
+                    <button i="2" dir="-1" class="disableme">▲</button>
                 </div>
             </div>
             <div>
@@ -55,8 +55,8 @@
                     <input type="number" id="SPLBot"/>
                 </div>
                 <div class="moveButtons">
-                    <button move="true" btn-name="splbot" dir="1" class="disableme">▼</button>
-                    <button move="true" btn-name="splbot" dir="-1" class="disableme">▲</button>
+                    <button i="3" dir="1" class="disableme">▼</button>
+                    <button i="3" dir="-1" class="disableme">▲</button>
                 </div>
             </div>
             <div>
@@ -65,8 +65,8 @@
                     <input type="number" id="FRTop"/>
                 </div>
                 <div class="moveButtons">
-                    <button move="true" btn-name="frtop" dir="-1" class="disableme">◀</button>
-                    <button move="true" btn-name="frtop" dir="1" class="disableme">▶</button>
+                    <button i="1" dir="-1" class="disableme">◀</button>
+                    <button i="1" dir="1" class="disableme">▶</button>
                 </div>
             </div>
             <div>
@@ -75,13 +75,9 @@
                     <input type="number" id="FRBot" min="0" onchange="minVal(this)"/>
                 </div>
                 <div class="moveButtons">
-                    <button move="true" btn-name="frbot" dir="-1" class="disableme">◀</button>
-                    <button move="true" btn-name="frbot" dir="1" class="disableme">▶</button>
+                    <button i="0" dir="-1" class="disableme">◀</button>
+                    <button i="0" dir="1" class="disableme">▶</button>
                 </div>
-            </div>
-            <div>
-                <label for="moveSpeedOffset">Line Move Speed Offset: </label>
-                <input type="number" id="moveSpeedOffset" onchange="updateLineMoveSpeed()"/>
             </div>
         </div>
         <div class="sidebarSection">
@@ -139,8 +135,8 @@
                 <input type="number" id="exportFRPrecision"/>
             </div>
         </div>
-        <div class="divButton sidebarSection" id="restoreDefault">
-            <label onclick="restoreDefault()">Restore Default Settings</label>
+        <div onclick="restoreDefault()" class="divButton sidebarSection" id="restoreDefault">
+            <label>Restore Default Settings</label>
         </div>
         <div class="divButton sidebarSection">
             <a href="https://github.com/usyless/usyless.github.io?tab=readme-ov-file#general-use" target="_blank">Help/Repository</a>
@@ -157,8 +153,8 @@
     <div id="main-content">
         <div id="inner-content">
             <div id="glass" class="hidden magnify"></div>
-            <img id='uploadedImage' src='' alt='' class="removePointerEvents"/>
-            <canvas id="lineCanvas" class="canvasSizing"></canvas>
+            <img id='uploadedImage' src='' alt='' class="canvasSizing"/>
+            <svg id="lines" class="canvasSizing"></svg>
             <svg id="trace" class="canvasSizing removePointerEvents"></svg>
             <h1 temp_thing="true">Please Choose An Image (Or drop an image on the page)</h1>
         </div>

@@ -1,20 +1,13 @@
 'use strict';
 
 // global constants
-let svg = document.getElementById('trace');
+let traceSVG = document.getElementById('trace'),
+    lineSVG = document.getElementById('lines');
+
 const image = document.getElementById('uploadedImage'),
-
-    pointButton = document.getElementById('selectPoint'),
-    pathButton = document.getElementById('selectPath'),
-
-    lineCanvas = document.getElementById('lineCanvas'),
-
     main = document.getElementById('main'),
-
     fileInput = document.getElementById('imageInput'),
-
     state = State(),
-
     defaults = {
         "colourTolerance": 50,
         "maxLineHeightOffset": 0,
@@ -27,8 +20,6 @@ const image = document.getElementById('uploadedImage'),
         "exportSPLPrecision": 3,
         "exportFRPrecision": 5,
 
-        "moveSpeedOffset": 0,
-
         "SPLTop": "",
         "SPLBot": "",
         "FRTop": "",
@@ -36,22 +27,14 @@ const image = document.getElementById('uploadedImage'),
     };
 
 // create global variables
-let worker, hLineMoveSpeed, vLineMoveSpeed, lines, sizeRatio, lineWidth, imageData;
+let worker, lines, sizeRatio, imageData, width, height;
 
 // call initial functions
 restoreDefault();
 createWorker();
 
-// functions
-const drawLines = getDrawLines();
-
 // assign event listeners
 multiEventListener('dragstart', image, (e) => e.preventDefault());
-multiEventListener('click', document.getElementById('imageInputDiv'), () => fileInput.click());
-multiEventListener('click', document.getElementById("restoreDefault"), () => restoreDefault());
-multiEventListener('click', pathButton, () => state.togglePath());
-multiEventListener('click', pointButton, () => state.togglePoint());
-multiEventListener('change', fileInput, () => state.loadNewImage());
 
 { // Drag and drop stuff
     multiEventListener('dragover', main, (e) => {
@@ -65,10 +48,9 @@ multiEventListener('change', fileInput, () => state.loadNewImage());
     });
     multiEventListener('drop', main, (e) => {
         e.preventDefault();
-        main.style.opacity = "1";
+        main.classList.remove('lowOpacity');
         fileInput.files = e.dataTransfer.files;
-        let event = new Event('change');
-        fileInput.dispatchEvent(event);
+        fileInput.dispatchEvent(new Event('change'));
     });
 }
 
@@ -91,94 +73,44 @@ multiEventListener('load', image, () => {
     document.querySelectorAll("[temp_thing='true']").forEach((e) => e.remove());
     document.querySelectorAll("button[class='disableme']").forEach((b) => b.disabled = false);
 
-    lineCanvas.width = image.naturalWidth;
-    lineCanvas.height = image.naturalHeight;
-    svg.setAttribute("width", image.naturalWidth);
-    svg.setAttribute("height", image.naturalHeight);
-    svg.setAttribute("viewBox", `0 0 ${image.naturalWidth} ${image.naturalHeight}`);
+    width = image.naturalWidth;
+    height = image.naturalHeight;
+
+    document.querySelectorAll('svg').forEach((svg) => {
+        svg.setAttribute("width", width);
+        svg.setAttribute("height", height);
+        svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    })
 
     updateSizeRatio();
-    updateLineWidth();
-    updateLineMoveSpeed();
     setUpImageData();
 
     lines = [
-        {pos: lineCanvas.width * 0.1, type: "Low", dir: "x"},
-        {pos: lineCanvas.width * 0.9, type: "High", dir: "x"},
-        {pos: lineCanvas.height * 0.1, type: "High", dir: "y"},
-        {pos: lineCanvas.height * 0.9, type: "Low", dir: "y"}
+        {pos: width * 0.1, type: "Low", dir: "x"},
+        {pos: width * 0.9, type: "High", dir: "x"},
+        {pos: height * 0.1, type: "High", dir: "y"},
+        {pos: height * 0.9, type: "Low", dir: "y"}
     ]
 
-    drawLines();
+    createLines();
 });
 
 multiEventListener('resize', window, () => {
     updateSizeRatio();
-    drawLines();
+    updateLineWidth();
 });
 
-{ // Move canvas lines with mouse
-    let selectedLine = null, offset = 0;
-
-    multiEventListener('mousedown', lineCanvas, (e) => {
-        const m = getMouseCoords(e);
-        let t;
-
-        for (const line of lines) {
-            if (line.dir === "x") t = lineCanvas.width * 0.02;
-            else t = lineCanvas.height * 0.02;
-            offset = m[`${line.dir}Rel`] * sizeRatio - line.pos;
-            if (Math.abs(offset) < t) {
-                selectedLine = line;
-                return;
-            }
-        }
-    });
-
-    multiEventListener('mousemove', lineCanvas, (e) => {
-        if (selectedLine) {
-            const m = getMouseCoords(e);
-            selectedLine.pos = Math.floor(m[`${selectedLine.dir}Rel`] * sizeRatio - offset);
-            drawLines();
-        }
-    });
-
-    multiEventListener(['mouseup', 'mouseleave', 'mouseout'], lineCanvas, (e) => {
-        e.preventDefault();
-        selectedLine = null;
-    });
-}
-
-{ // Move lines on canvas with buttons
-    function moveLine(line, button) {
-        if (line.dir === "x") line.pos += hLineMoveSpeed * button.getAttribute("dir");
-        else line.pos += vLineMoveSpeed * button.getAttribute("dir");
-        drawLines();
-    }
-    let holdInterval;
-    document.querySelectorAll("button[move='true']").forEach((btn) => {
+{ // Move lines on image with buttons
+    let holdInterval, line, speed;
+    document.querySelectorAll(".moveButtons button").forEach((btn) => {
         multiEventListener(['mousedown', 'touchstart'], btn, (e) => {
             e.preventDefault();
+            line = lines[parseInt(e.target.getAttribute("i"))];
+            speed = parseInt(e.target.getAttribute("dir"));
             holdInterval = setInterval(() => {
-                switch (e.target.getAttribute('btn-name')) {
-                    case 'spltop': {
-                        moveLine(lines[2], e.target);
-                        break;
-                    }
-                    case 'splbot': {
-                        moveLine(lines[3], e.target);
-                        break;
-                    }
-                    case 'frtop': {
-                        moveLine(lines[1], e.target);
-                        break;
-                    }
-                    case 'frbot': {
-                        moveLine(lines[0], e.target);
-                        break;
-                    }
-                }
-            }, 50);
+                line.pos += speed;
+                moveLines(line);
+            }, 10);
         });
 
         multiEventListener(['mouseup', 'mouseleave', 'mouseout', 'touchend', 'touchcancel'], btn, (e) => {
@@ -189,50 +121,30 @@ multiEventListener('resize', window, () => {
 }
 
 multiEventListener('click', image, (e) => {
-    const m = getMouseCoords(e),
-        x = m.xRel * sizeRatio,
-        y = m.yRel * sizeRatio;
-
-    if (state.checkState(state.States.selectingPath)) {
-        state.toggleTrace();
-        worker.postMessage({
-            type: 'trace',
-            x: x,
-            y: y,
-            lineHeightOffset: document.getElementById("maxLineHeightOffset").value,
-            colourTolerance: document.getElementById("colourTolerance").value,
-            maxJumpOffset: document.getElementById("maxJumpOffset").value
-        });
-    } else {
-        state.toggleTrace();
-        worker.postMessage({
-            type: 'point',
-            x: x,
-            y: y
-        });
-    }
+    const m = getMouseCoords(e);
+    state.handleImageClick(m.xRel * sizeRatio, m.yRel * sizeRatio);
 });
 
 // disable buttons with no image loaded
 document.querySelectorAll("button[class='disableme']").forEach(b => b.disabled = true);
 
 function State() {
-    const overlay = document.getElementById('overlay');
+    const overlay = document.getElementById('overlay'),
+        pointButton = document.getElementById('selectPoint'),
+        pathButton = document.getElementById('selectPath');
 
     function startImageEditing() {
-        document.querySelectorAll("button[move='true']").forEach((b) => b.disabled = true);
+        document.querySelectorAll(".moveButtons button").forEach((b) => b.disabled = true);
         image.classList.add("crosshair_hover");
         image.classList.remove("removePointerEvents");
-        lineCanvas.classList.add("removePointerEvents");
-        lineCanvas.classList.add("hidden");
+        lineSVG.classList.add("hidden");
     }
 
     function stopImageEditing() {
-        document.querySelectorAll("button[move='true']").forEach((b) => b.disabled = false);
+        document.querySelectorAll(".moveButtons button").forEach((b) => b.disabled = false);
         image.classList.remove("crosshair_hover");
         image.classList.add("removePointerEvents");
-        lineCanvas.classList.remove("removePointerEvents");
-        lineCanvas.classList.remove("hidden");
+        lineSVG.classList.remove("hidden");
     }
 
     function buttonsToDefault() {
@@ -266,7 +178,7 @@ function State() {
             stopImageEditing();
             image.src = URL.createObjectURL(document.getElementById('imageInput').files[0]);
             this.updateState(this.States.imageLoaded);
-            clearPath();
+            clearPathAndWorker();
         }
 
         togglePath() {
@@ -299,23 +211,47 @@ function State() {
             main.classList.toggle("not_allowed");
             main.classList.toggle("removePointerEvents");
         }
+
+        handleImageClick(x, y) {
+            this.toggleTrace();
+            if (this.checkState(this.States.selectingPath)) {
+                worker.postMessage({
+                    type: 'trace',
+                    x: x,
+                    y: y,
+                    lineHeightOffset: document.getElementById("maxLineHeightOffset").value,
+                    colourTolerance: document.getElementById("colourTolerance").value,
+                    maxJumpOffset: document.getElementById("maxJumpOffset").value
+                });
+            } else {
+                worker.postMessage({
+                    type: 'point',
+                    x: x,
+                    y: y
+                });
+            }
+        }
     }
 
     return new State();
 }
 
-function clearPath(no) { // put in a random string to not post to worker
-    const newSvg = svg.cloneNode(false);
-    svg.parentElement.replaceChild(newSvg, svg);
-    svg = newSvg;
-    if (worker && !no) worker.postMessage({type: "clear"});
+function clearPath() {
+    const newSvg = traceSVG.cloneNode(false);
+    traceSVG.parentElement.replaceChild(newSvg, traceSVG);
+    traceSVG = newSvg;
+}
+
+function clearPathAndWorker() {
+    clearPath();
+    worker.postMessage({type: "clear"});
 }
 
 function exportTrace() {
-    let SPLTop = document.getElementById("SPLTop").value;
-    let SPLBot = document.getElementById("SPLBot").value;
-    let FRTop = document.getElementById("FRTop").value;
-    let FRBot = document.getElementById("FRBot").value;
+    const SPLTop = document.getElementById("SPLTop").value,
+        SPLBot = document.getElementById("SPLBot").value,
+        FRTop = document.getElementById("FRTop").value,
+        FRBot = document.getElementById("FRBot").value;
 
     if (!SPLTop || !SPLBot || !FRTop || !FRBot) {
         let btn = document.getElementById("export");
@@ -347,54 +283,22 @@ function exportTrace() {
     });
 }
 
-function minVal(e) {
-    if (e.value < e.min) e.value = e.min;
-}
-
-function undo() {
-    if (worker) {
-        state.toggleTrace();
-        worker.postMessage({type: "undo"});
-    }
-}
-
-function restoreDefault() {
-    for (const val in defaults) {
-        document.getElementById(val).value = defaults[val];
-    }
-}
-
-function updateLineMoveSpeed() {
-    hLineMoveSpeed = Math.max(1, parseInt(document.getElementById("moveSpeedOffset").value) + Math.floor(image.naturalWidth * 0.004));
-    vLineMoveSpeed = Math.max(1, parseInt(document.getElementById("moveSpeedOffset").value) + Math.floor(image.naturalHeight * 0.004));
-}
-
 function updateSizeRatio() {
-    sizeRatio = image.naturalWidth / image.clientWidth;
-}
-
-function updateLineWidth() {
-    lineWidth = image.naturalHeight * 0.006;
+    sizeRatio = width / image.clientWidth;
 }
 
 function createWorker() {
     if (!worker) {
-        clearPath();
         worker = new Worker("./worker.js");
         worker.onmessage = (e) => {
             if (e.data['type'] === "done") {
-                clearPath("lmfao");
+                clearPath();
                 const traceData = e.data['trace'];
                 if (traceData.length > 1) {
-                    for (let i = 0; i < traceData.length - 1; i++) {
-                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                        line.setAttribute('x1', traceData[i][0]);
-                        line.setAttribute('y1', traceData[i][1]);
-                        line.setAttribute('x2', traceData[i + 1][0]);
-                        line.setAttribute('y2', traceData[i + 1][1]);
-                        line.setAttribute('stroke', e.data['colour']);
-                        line.setAttribute('stroke-width', lineWidth);
-                        svg.appendChild(line);
+                    const l = traceData.length, lineWidth = height * 0.005;
+                    for (let i = 0; i < l - 1; i++) {
+                        traceSVG.appendChild(createSVGLine(traceData[i][0],
+                            traceData[i][1], traceData[i + 1][0], traceData[i + 1][1], e.data['colour'], lineWidth));
                     }
                 }
                 state.toggleTrace();
@@ -419,35 +323,103 @@ function multiEventListener(events, target, callback) {
     events.forEach((ev) => target.addEventListener(ev, callback));
 }
 
-function getDrawLines() {
-    const lineCanvasCtx = lineCanvas.getContext("2d");
+function createSVGLine(x1, y1, x2, y2, colour, width) {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1);
+    line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2);
+    line.setAttribute('y2', y2);
+    line.setAttribute('stroke', colour);
+    line.setAttribute('stroke-width', width);
+    return line;
+}
 
-    function drawLines() {
-        lineCanvasCtx.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
-        lineCanvasCtx.font = `${1.3 * sizeRatio}rem arial`
-        lineCanvasCtx.lineWidth = sizeRatio;
-        lineCanvasCtx.fillStyle = '#ff0000';
+function createSVGText(text, x, y) {
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.textContent = text;
+    t.setAttribute('x', x);
+    t.setAttribute('y', y);
+    t.setAttribute('font-size', `${1.3 * sizeRatio}em`);
+    return t;
+}
 
-        for (const line of lines) {
-            lineCanvasCtx.beginPath();
-            if (line.dir === "x") {
-                lineCanvasCtx.strokeStyle = 'green';
-                line.pos = Math.floor(Math.max(lineCanvas.width * 0.02, Math.min(lineCanvas.width * 0.98, line.pos)));
-                lineCanvasCtx.moveTo(line.pos, 0);
-                lineCanvasCtx.lineTo(line.pos, lineCanvas.height);
-                lineCanvasCtx.fillText(line.type, line.pos + 5, lineCanvas.height * 0.5);
-            } else {
-                lineCanvasCtx.strokeStyle = 'blue';
-                line.pos = Math.floor(Math.max(lineCanvas.height * 0.02, Math.min(lineCanvas.height * 0.98, line.pos)));
-                lineCanvasCtx.moveTo(0, line.pos);
-                lineCanvasCtx.lineTo(lineCanvas.width, line.pos);
-                lineCanvasCtx.fillText(line.type, lineCanvas.width * 0.5, line.pos - 5);
-            }
-            lineCanvasCtx.stroke();
+function moveLines(line) {
+    const l = lineSVG.querySelector(`line[dir="${line.dir}"][type="${line.type}"]`);
+    if (line.dir === 'x') {
+        line.pos = Math.floor(Math.max(width * 0.02, Math.min(width * 0.98, line.pos)));
+        updateLine(l, line, line.pos, '0', line.pos, height);
+    } else {
+        line.pos = Math.floor(Math.max(height * 0.02, Math.min(height * 0.98, line.pos)));
+        updateLine(l, line, '0', line.pos, width, line.pos);
+    }
+}
+
+function updateLineWidth() {
+    for (const line of lineSVG.querySelectorAll('line')) line.setAttribute('stroke-width', sizeRatio);
+    for (const text of lineSVG.querySelectorAll('text')) text.setAttribute('font-size', `${1.3 * sizeRatio}em`);
+}
+
+function updateLine(l, line, x1, y1, x2, y2) {
+    l.nextElementSibling.setAttribute(line.dir, line.pos);
+    l.setAttribute('x1', x1);
+    l.setAttribute('y1', y1);
+    l.setAttribute('x2', x2);
+    l.setAttribute('y2', y2);
+}
+
+function createLines() {
+    const newSvg = lineSVG.cloneNode(false);
+    lineSVG.parentElement.replaceChild(newSvg, lineSVG);
+    lineSVG = newSvg;
+
+    { // Move canvas lines with mouse
+        let selectedLine = null, offset = 0;
+        const sizes = {
+            x: width,
+            y: height
         }
+
+        multiEventListener('mousedown', lineSVG, (e) => {
+            const m = getMouseCoords(e);
+
+            for (const line of lines) {
+                offset = m[`${line.dir}Rel`] * sizeRatio - line.pos;
+                if (Math.abs(offset) < sizes[line.dir] * 0.02) {
+                    selectedLine = line;
+                    return;
+                }
+            }
+        });
+
+        multiEventListener('mousemove', lineSVG, (e) => {
+            if (selectedLine) {
+                const m = getMouseCoords(e);
+                selectedLine.pos = Math.floor(m[`${selectedLine.dir}Rel`] * sizeRatio - offset);
+                moveLines(selectedLine);
+            }
+        });
+
+        multiEventListener(['mouseup', 'mouseleave'], lineSVG, (e) => {
+            e.preventDefault();
+            selectedLine = null;
+        });
     }
 
-    return drawLines;
+    for (const line of lines) {
+        let l, t;
+        if (line.dir === "x") {
+            l = createSVGLine(line.pos, "0", line.pos, height, 'green', sizeRatio);
+            t = createSVGText(line.type, line.pos, height / 2);
+        }
+        else {
+            l = createSVGLine("0", line.pos, width, line.pos, 'blue', sizeRatio);
+            t = createSVGText(line.type, width / 2, line.pos);
+        }
+        l.setAttribute("dir", line.dir);
+        l.setAttribute("type", line.type);
+        lineSVG.appendChild(l);
+        lineSVG.appendChild(t);
+    }
 }
 
 function getMouseCoords(e) {
@@ -463,8 +435,8 @@ function getMouseCoords(e) {
 function setUpImageData() {
     const processing_canvas = document.createElement("canvas");
     const processing_context = processing_canvas.getContext('2d');
-    processing_canvas.width = image.naturalWidth;
-    processing_canvas.height = image.naturalHeight;
+    processing_canvas.width = width;
+    processing_canvas.height = height;
 
     const new_image = new Image;
     new_image.src = image.src;
@@ -474,4 +446,38 @@ function setUpImageData() {
         type: 'setData',
         imageData: imageData
     });
+}
+
+// HTML Functions
+function togglePath() {
+    state.togglePath();
+}
+
+function togglePoint() {
+    state.togglePoint();
+}
+
+function loadNewImage() {
+    state.loadNewImage();
+}
+
+function clickFileInput() {
+    fileInput.click()
+}
+
+function minVal(e) {
+    if (e.value < e.min) e.value = e.min;
+}
+
+function undo() {
+    if (worker) {
+        state.toggleTrace();
+        worker.postMessage({type: "undo"});
+    }
+}
+
+function restoreDefault() {
+    for (const val in defaults) {
+        document.getElementById(val).value = defaults[val];
+    }
 }

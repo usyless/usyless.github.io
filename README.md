@@ -13,11 +13,8 @@
 - Use "Add Point" to add points manually to the trace
 - Once you're done, press "Export Trace"
 
-## On Mobile
-### Usage
+### Mobile Specifics
 - Move the SPL and Frequency lines by using the buttons, selecting the line to trace works as normal but may require more tries
-### Line Move Speed Offset
-- Offset to the speed at which the SPL and Frequency lines move at when holding the buttons
 
 ## Trace Settings:
 ### Colour Tolerance
