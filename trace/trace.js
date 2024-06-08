@@ -86,13 +86,14 @@ multiEventListener('load', image, () => {
     setUpImageData();
 
     lines = [
-        {pos: width * 0.1, type: "Low", dir: "x"},
-        {pos: width * 0.9, type: "High", dir: "x"},
-        {pos: height * 0.1, type: "High", dir: "y"},
-        {pos: height * 0.9, type: "Low", dir: "y"}
+        {pos: width * 0.1, type: "Low", dir: "x", i: 0},
+        {pos: width * 0.9, type: "High", dir: "x", i: 1},
+        {pos: height * 0.1, type: "High", dir: "y", i: 2},
+        {pos: height * 0.9, type: "Low", dir: "y", i: 3}
     ]
 
     createLines();
+    state.snapLines();
 });
 
 multiEventListener('resize', window, () => {
@@ -101,16 +102,25 @@ multiEventListener('resize', window, () => {
 });
 
 { // Move lines on image with buttons
-    let holdInterval, line, speed;
+    let holdInterval, line, speed, snap = true;
+    const snapSetting = document.getElementById('snap');
+    updateSnap();
+    function updateSnap() {
+        snap = snapSetting.checked;
+    }
+    multiEventListener('change', snapSetting, updateSnap);
     document.querySelectorAll(".moveButtons button").forEach((btn) => {
         multiEventListener(['mousedown', 'touchstart'], btn, (e) => {
             e.preventDefault();
             line = lines[parseInt(e.target.getAttribute("i"))];
             speed = parseInt(e.target.getAttribute("dir"));
-            holdInterval = setInterval(() => {
-                line.pos += speed;
-                moveLines(line);
-            }, 10);
+            if (snap) state.snapLine(line, speed);
+            else {
+                holdInterval = setInterval(() => {
+                    line.pos += speed;
+                    moveLine(line);
+                }, 10);
+            }
         });
 
         multiEventListener(['mouseup', 'mouseleave', 'mouseout', 'touchend', 'touchcancel'], btn, (e) => {
@@ -178,8 +188,23 @@ function State() {
 
         loadNewImage() {
             stopImageEditing();
-            image.src = URL.createObjectURL(document.getElementById('imageInput').files[0]);
+            image.src = URL.createObjectURL(fileInput.files[0]);
             clearPathAndWorker();
+        }
+
+        snapLines() {
+            this.snapLine(lines[0], 1); // move right
+            this.snapLine(lines[1], -1); // move left
+            this.snapLine(lines[2], 1); // move down
+            this.snapLine(lines[3], -1); // move up
+        }
+
+        snapLine(line, direction) {
+            worker.postMessage({
+                type: 'snap',
+                dir: direction,
+                line: line
+            });
         }
 
         autoPath() {
@@ -309,9 +334,9 @@ function createWorker() {
                     }
                 }
                 state.toggleTrace();
-            } else {
-                let a = document.createElement("a");
-                let url = URL.createObjectURL(new Blob([e.data['export']], {type: "text/plain;charset=utf-8"}));
+            } else if (e.data['type'] === 'export') {
+                const a = document.createElement("a"),
+                    url = URL.createObjectURL(new Blob([e.data['export']], {type: "text/plain;charset=utf-8"}));
                 a.href = url;
                 a.download = "trace.txt";
                 document.body.appendChild(a);
@@ -320,6 +345,10 @@ function createWorker() {
                     document.body.removeChild(a);
                     window.URL.revokeObjectURL(url);
                 }, 0);
+            } else {
+                const newLine = e.data['line'], line = lines[newLine.i];
+                line.pos = newLine.pos;
+                moveLine(line);
             }
         }
     }
@@ -350,7 +379,7 @@ function createSVGText(text, x, y) {
     return t;
 }
 
-function moveLines(line) {
+function moveLine(line) {
     const l = lineSVG.querySelector(`line[dir="${line.dir}"][type="${line.type}"]`);
     if (line.dir === 'x') {
         line.pos = Math.floor(Math.max(1, Math.min(width - 1, line.pos)));
@@ -402,7 +431,7 @@ function createLines() {
             if (selectedLine) {
                 const m = getMouseCoords(e);
                 selectedLine.pos = Math.floor(m[`${selectedLine.dir}Rel`] * sizeRatio - offset);
-                moveLines(selectedLine);
+                moveLine(selectedLine);
             }
         });
 
@@ -448,6 +477,7 @@ function setUpImageData() {
     const new_image = new Image;
     new_image.src = image.src;
     processing_context.drawImage(new_image, 0, 0);
+    processing_context.drawImage(new_image, 0, 0, 1, 1); // top left pixel is average colour of image
     imageData = processing_context.getImageData(0, 0, new_image.naturalWidth, new_image.naturalHeight);
     worker.postMessage({
         type: 'setData',

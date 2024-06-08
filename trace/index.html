@@ -44,7 +44,7 @@
         <div class="sidebarSection">
             <div>
                 <div>
-                    <label for="SPLTop">Higher SPL (dB): </label>
+                    <label for="SPLTop">Higher SPL (dB)</label>
                     <input type="number" id="SPLTop"/>
                 </div>
                 <div class="moveButtons">
@@ -54,7 +54,7 @@
             </div>
             <div>
                 <div>
-                    <label for="SPLBot">Lower SPL (dB): </label>
+                    <label for="SPLBot">Lower SPL (dB)</label>
                     <input type="number" id="SPLBot"/>
                 </div>
                 <div class="moveButtons">
@@ -64,7 +64,7 @@
             </div>
             <div>
                 <div>
-                    <label for="FRTop">Higher Frequency (Hz): </label>
+                    <label for="FRTop">Higher Frequency (Hz)</label>
                     <input type="number" id="FRTop"/>
                 </div>
                 <div class="moveButtons">
@@ -74,7 +74,7 @@
             </div>
             <div>
                 <div>
-                    <label for="FRBot">Lower Frequency (Hz): </label>
+                    <label for="FRBot">Lower Frequency (Hz)</label>
                     <input type="number" id="FRBot" min="0" onchange="minVal(this)"/>
                 </div>
                 <div class="moveButtons">
@@ -82,21 +82,25 @@
                     <button i="0" dir="1" class="disableme">▶</button>
                 </div>
             </div>
+            <div>
+                <label for="snap">Buttons snap to axis</label>
+                <input id="snap" type="checkbox" checked>
+            </div>
         </div>
         <div class="sidebarSection">
             <div>
                 <h3>Trace Settings</h3>
             </div>
             <div>
-                <label for="colourTolerance">Colour Tolerance: </label>
+                <label for="colourTolerance">Colour Tolerance</label>
                 <input type="number" id="colourTolerance" min="1" onchange="minVal(this)"/>
             </div>
             <div>
-                <label for="maxLineHeightOffset">Max Line Thickness Offset: </label>
+                <label for="maxLineHeightOffset">Max Line Thickness Offset</label>
                 <input type="number" id="maxLineHeightOffset"/>
             </div>
             <div>
-                <label for="maxJumpOffset">Largest Contiguous Jump Offset: </label>
+                <label for="maxJumpOffset">Largest Contiguous Jump Offset</label>
                 <input type="number" id="maxJumpOffset"/>
             </div>
         </div>
@@ -105,7 +109,7 @@
                 <h3>Export Settings</h3>
             </div>
             <div>
-                <label for="PPO">Points Per Octave (PPO): </label>
+                <label for="PPO">Points Per Octave (PPO)</label>
                 <select name="PPO" id="PPO">
                     <option value="6">6</option>
                     <option value="12">12</option>
@@ -115,26 +119,26 @@
                 </select>
             </div>
             <div>
-                <label for="delimitation">Delimitation: </label>
+                <label for="delimitation">Delimitation</label>
                 <select name="delimitation" id="delimitation">
                     <option value="tab">Tab</option>
                     <option value="space">Space</option>
                 </select>
             </div>
             <div>
-                <label for="lowFRExport">Minimum Frequency (Hz): </label>
+                <label for="lowFRExport">Minimum Frequency (Hz)</label>
                 <input type="number" id="lowFRExport" min="1" onchange="minVal(this)"/>
             </div>
             <div>
-                <label for="highFRExport">Maximum Frequency (Hz): </label>
+                <label for="highFRExport">Maximum Frequency (Hz)</label>
                 <input type="number" id="highFRExport"/>
             </div>
             <div>
-                <label for="exportSPLPrecision">SPL Precision: </label>
+                <label for="exportSPLPrecision">SPL Precision</label>
                 <input type="number" id="exportSPLPrecision"/>
             </div>
             <div>
-                <label for="exportFRPrecision">Frequency Precision: </label>
+                <label for="exportFRPrecision">Frequency Precision</label>
                 <input type="number" id="exportFRPrecision"/>
             </div>
         </div>

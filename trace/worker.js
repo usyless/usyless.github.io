@@ -7,9 +7,6 @@ let previousTrace = new Map();
 let traceColour = '#ff0000';
 let previousColour;
 
-const funcs = [[(j, z) => j + z, 1], [(j, z) => j - z, 0]]; // the functional parameters go crazy
-let colours = [];
-
 onmessage = (e) => {
     switch (e.data['type']) {
         case "clear": {
@@ -40,6 +37,10 @@ onmessage = (e) => {
             trace(e.data);
             break;
         }
+        case "snap": {
+            snap(e.data);
+            break;
+        }
     }
 }
 
@@ -55,11 +56,9 @@ class RGB {
     }
 
     withinTolerance(x, y) {
-        const [newR, newG, newB] = RGB.getRGB(x, y);
-        const rmean = (this.R + newR) / 2;
-        const r = this.R - newR;
-        const g = this.G - newG;
-        const b = this.B - newB;
+        const [newR, newG, newB] = RGB.getRGB(x, y),
+            rmean = (this.R + newR) / 2,
+            r = this.R - newR, g = this.G - newG, b = this.B - newB;
         return Math.sqrt((((512 + rmean) * r * r) >> 8) + 4 * g * g + (((767 - rmean) * b * b) >> 8)) <= this.tolerance;
     }
 
@@ -87,6 +86,11 @@ class RGB {
         return [imageData.data[v], // R
                 imageData.data[v + 1], // G
                 imageData.data[v + 2]]; // B
+    }
+
+    static getGrayscale(x, y) {
+        const [R, G, B] = RGB.getRGB(x, y);
+        return (R + G + B) / 3;
     }
 }
 
@@ -250,7 +254,7 @@ function addPoint(x, y) {
     cleanDataSendTrace();
 }
 
-function autoTrace(data) {
+function autoTrace(data) { // calculate based on difference to background, bigger difference = more likely maybe?
     const h = imageData.height, maxYRange = Math.floor(h * 0.35),
         middleY = Math.floor(h / 2), yCond = middleY - maxYRange,
         middleX = Math.floor(imageData.width / 2);
@@ -269,37 +273,84 @@ function autoTrace(data) {
 
 function trace(data) {
     savePreviousTrace();
-    const x = parseInt(data['x'], 10), y = parseInt(data['y'], 10),
-        maxLineHeight = Math.max(0, Math.floor(imageData.height * 0.05) + parseIntDefault(data['maxLineHeightOffset'], 0)),
-        maxJump = Math.max(0, Math.floor(imageData.width * 0.02)) + parseIntDefault(data['maxJumpOffset'], 0),
-        colour = new RGB(x, y, parseInt(data['colourTolerance'], 10)),
-        w = imageData.width;
-    trace(x, (x) => x >= 0, -1);
-    trace(x + 1, (x) => x < w, 1);
+    const x = parseInt(data['x'], 10), y = parseInt(data['y'], 10), w = imageData.width, h = imageData.height,
+        maxLineHeight = Math.max(0, Math.floor(h * 0.05) + parseIntDefault(data['maxLineHeightOffset'], 0)),
+        maxJump = Math.max(0, Math.floor(w * 0.02)) + parseIntDefault(data['maxJumpOffset'], 0),
+        colour = new RGB(x, y, parseInt(data['colourTolerance'], 10));
+    trace(x, -1);
+    trace(x + 1, 1);
 
     traceColour = colour.getTraceColourHex();
     cleanDataSendTrace();
-    function trace(start, loop_func, step) {
-        let n, m = 0, j = y, max;
-        for (let i = start; loop_func(i); i += step) {
+    function trace(start, step) {
+        let n, m = 0, j = y, max, colours;
+        for (; start >= 0 && start < w; start += step) {
             colours = [];
             max = maxLineHeight + m*2;
-            for (const [func, start] of funcs) {
-                for (let z = start; z <= max; z++) {
-                    n = Math.max(0, Math.min(imageData.height - 1, func(j, z)));
-                    if (colour.withinTolerance(i, n)) colours.push(n);
-                }
+            checkPixel(start, j);
+            for (let z = 1; z <= max; z++) {
+                checkPixel(start, j + z);
+                checkPixel(start, j - z);
             }
             if (colours.length > 0) {
                 m = 0;
-                for (const c of colours) colour.addToAverage(i, c);
-                colours.sort((a, b) => a - b);
-                j = colours[Math.floor(colours.length / 2)];
-                currentTrace.set(i, j);
+                for (const c of colours) {
+                    m += c;
+                    colour.addToAverage(start, c);
+                }
+                j = Math.floor(m / colours.length);
+                m = 0;
+                currentTrace.set(start, j);
                 continue;
             }
             if (m < maxJump) m++;
             else break;
         }
+
+        function checkPixel(x, y) {
+            n = Math.max(0, Math.min(h - 1, y));
+            if (colour.withinTolerance(x, n)) colours.push(n);
+        }
+    }
+}
+
+function snap(data) {
+    const line = data['line'], pos = Math.floor(line.pos),
+        imgAvg = RGB.getGrayscale(0, 0), valid = [];
+    let s = imageData.height, z = imageData.width, direction = parseInt(data['dir']), func = (x, y) => [x, y];
+    if (line.dir === "y") {
+        s = imageData.width;
+        z = imageData.height;
+        func = (x, y) => [y, x]
+    }
+
+    const lower = Math.floor(s * 0.2), upper = Math.floor(s * 0.8),
+        jump = Math.floor(z * 0.01);
+
+    customFor(pos + (jump * direction), z, direction, lower, upper, upper - lower, func);
+
+    if (valid.length > 0) {
+        let sum = 0;
+        for (const v of valid) sum += v;
+        line.pos = sum / valid.length;
+        postMessage({
+            type: 'snap',
+            line: line
+        });
+    }
+
+    function customFor(start, max, direction, lower, upper, total, func) {
+        for (let i = start; i < max && i >= 0; i += direction) {
+            if (lineColourInTolerance(i, lower, upper, total, func)) valid.push(i);
+            else if (valid.length > 0) break;
+        }
+    }
+
+    function lineColourInTolerance(pos, lowerBound, upperBound, total, func) {
+        let trueCount = 0;
+        for (let j = upperBound; j > lowerBound; j--) {
+            if (Math.abs(RGB.getGrayscale(...func(pos, j)) - imgAvg) > 10) trueCount++;
+        }
+        if (trueCount >= 0.95 * total) return true;
     }
 }
