@@ -77,8 +77,9 @@ class RGB {
         if (s === this.G) return '#00ff00';
         return '#0000ff';
     }
-    biggestRGBDifference() {
-        return Math.max(this.R, this.G, this.B) - Math.min(this.R, this.G, this.B);
+    static biggestRGBDifference(x, y) {
+        const [R, G, B] = RGB.getRGB(x, y);
+        return Math.max(R, G, B) - Math.min(R, G, B);
     }
 
     static getRGB(x, y) {
@@ -250,26 +251,18 @@ function addPoint(x, y) {
 }
 
 function autoTrace(data) {
-    const w = imageData.width,
-        h = imageData.height,
-        maxYRange = Math.floor(h * 0.2),
-        middleY = Math.floor(h / 2),
-        yCond = middleY - maxYRange,
-        middleX = Math.floor(w / 2),
-        maxXRange = Math.floor(w * 0.2),
-        xCond = middleX + maxXRange;
-    let bestX, bestY, c, currentDiff = 0;
+    const h = imageData.height, maxYRange = Math.floor(h * 0.35),
+        middleY = Math.floor(h / 2), yCond = middleY - maxYRange,
+        middleX = Math.floor(imageData.width / 2);
+    let bestY, c, currentDiff = 0;
     for (let y = middleY + maxYRange; y > yCond; y--) {
-        for (let x = middleX - maxXRange; x < xCond; x++) {
-            c = (new RGB(x, y, 0)).biggestRGBDifference();
-            if (c > currentDiff) {
-                bestX = x;
-                bestY = y;
-                currentDiff = c;
-            }
+        c = RGB.biggestRGBDifference(middleX, y);
+        if (c > currentDiff) {
+            bestY = y;
+            currentDiff = c;
         }
     }
-    data['x'] = bestX;
+    data['x'] = middleX;
     data['y'] = bestY;
     trace(data);
 }

@@ -353,10 +353,10 @@ function createSVGText(text, x, y) {
 function moveLines(line) {
     const l = lineSVG.querySelector(`line[dir="${line.dir}"][type="${line.type}"]`);
     if (line.dir === 'x') {
-        line.pos = Math.floor(Math.max(1, Math.min(width - 2, line.pos)));
+        line.pos = Math.floor(Math.max(1, Math.min(width - 1, line.pos)));
         updateLine(l, line, line.pos, '0', line.pos, height);
     } else {
-        line.pos = Math.floor(Math.max(1, Math.min(height - 2, line.pos)));
+        line.pos = Math.floor(Math.max(1, Math.min(height - 1, line.pos)));
         updateLine(l, line, '0', line.pos, width, line.pos);
     }
 }
