@@ -251,12 +251,16 @@ function addPoint(x, y) {
 
 function autoTrace(data) {
     const w = imageData.width,
-        max = Math.floor(imageData.height * 0.1),
-        middle = Math.floor(imageData.height / 2),
-        l = middle - max;
+        h = imageData.height,
+        maxYRange = Math.floor(h * 0.2),
+        middleY = Math.floor(h / 2),
+        yCond = middleY - maxYRange,
+        middleX = Math.floor(w / 2),
+        maxXRange = Math.floor(w * 0.2),
+        xCond = middleX + maxXRange;
     let bestX, bestY, c, currentDiff = 0;
-    for (let y = middle + max; y >= l; y--) {
-        for (let x = 0; x < w; x++) {
+    for (let y = middleY + maxYRange; y > yCond; y--) {
+        for (let x = middleX - maxXRange; x < xCond; x++) {
             c = (new RGB(x, y, 0)).biggestRGBDifference();
             if (c > currentDiff) {
                 bestX = x;
@@ -286,7 +290,7 @@ function trace(data) {
         let n, m = 0, j = y, max;
         for (let i = start; loop_func(i); i += step) {
             colours = [];
-            max = maxLineHeight + m;
+            max = maxLineHeight + m*2;
             for (const [func, start] of funcs) {
                 for (let z = start; z <= max; z++) {
                     n = Math.max(0, Math.min(imageData.height - 1, func(j, z)));
@@ -295,10 +299,10 @@ function trace(data) {
             }
             if (colours.length > 0) {
                 m = 0;
+                for (const c of colours) colour.addToAverage(i, c);
                 colours.sort((a, b) => a - b);
                 j = colours[Math.floor(colours.length / 2)];
                 currentTrace.set(i, j);
-                colour.addToAverage(i, j);
                 continue;
             }
             if (m < maxJump) m++;

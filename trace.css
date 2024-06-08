@@ -170,7 +170,7 @@ select {
     position: absolute;
 }
 
-.removePointerEvents {
+.removePointerEvents, .removePointerEvents * {
     pointer-events: none;
 }
 
@@ -182,7 +182,7 @@ select {
     cursor: crosshair;
 }
 
-.not_allowed {
+.not_allowed, .not_allowed * {
     cursor: not-allowed;
 }
 

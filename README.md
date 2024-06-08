@@ -7,7 +7,7 @@
 ## General use
 - Press "Choose Image" and choose an image to trace from
 - Align the top and bottom lines for SPL and Frequency to known values, then input those in the sidebar
-- There should be a line traced on the graph right away, if not, refer below
+- Press "Auto Trace", if it fails, press "Clear Path" then refer below
 - Press "Export Trace"
 
 ### If auto trace fails

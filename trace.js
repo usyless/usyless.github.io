@@ -93,7 +93,6 @@ multiEventListener('load', image, () => {
     ]
 
     createLines();
-    state.autoPath();
 });
 
 multiEventListener('resize', window, () => {
@@ -135,6 +134,7 @@ function State() {
         pathButton = document.getElementById('selectPath');
 
     function startImageEditing() {
+        buttonsToDefault();
         document.querySelectorAll(".moveButtons button").forEach((b) => b.disabled = true);
         image.classList.add("crosshair_hover");
         image.classList.remove("removePointerEvents");
@@ -142,10 +142,12 @@ function State() {
     }
 
     function stopImageEditing() {
+        buttonsToDefault();
         document.querySelectorAll(".moveButtons button").forEach((b) => b.disabled = false);
         image.classList.remove("crosshair_hover");
         image.classList.add("removePointerEvents");
         lineSVG.classList.remove("hidden");
+        state.updateState(state.States.imageLoaded);
     }
 
     function buttonsToDefault() {
@@ -175,10 +177,8 @@ function State() {
         }
 
         loadNewImage() {
-            buttonsToDefault();
             stopImageEditing();
             image.src = URL.createObjectURL(document.getElementById('imageInput').files[0]);
-            this.updateState(this.States.imageLoaded);
             clearPathAndWorker();
         }
 
@@ -193,26 +193,22 @@ function State() {
         }
 
         togglePath() {
-            buttonsToDefault();
             if (this.checkState([this.States.imageLoaded, this.States.selectingPoint])) {
                 startImageEditing();
                 pathButton.innerText = pathButton.getAttribute("alt");
                 this.updateState(this.States.selectingPath);
-            } else if (this.checkState(this.States.selectingPath)) {
+            } else {
                 stopImageEditing();
-                this.updateState(this.States.imageLoaded);
             }
         }
 
         togglePoint() {
-            buttonsToDefault();
             if (this.checkState([this.States.imageLoaded, this.States.selectingPath])) {
                 startImageEditing();
                 pointButton.innerText = pointButton.getAttribute("alt");
                 this.updateState(this.States.selectingPoint);
-            } else if (this.checkState(this.States.selectingPoint)) {
+            } else {
                 stopImageEditing();
-                this.updateState(this.States.imageLoaded);
             }
         }
 
