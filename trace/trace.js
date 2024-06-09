@@ -9,7 +9,7 @@ const image = document.getElementById('uploadedImage'),
     fileInput = document.getElementById('imageInput'),
     state = State(),
     defaults = {
-        "colourTolerance": 50,
+        "colourTolerance": 65,
         "maxLineHeightOffset": 0,
         "maxJumpOffset": 0,
 
@@ -80,7 +80,7 @@ multiEventListener('load', image, () => {
         svg.setAttribute("width", width);
         svg.setAttribute("height", height);
         svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-    })
+    });
 
     updateSizeRatio();
     setUpImageData();
@@ -94,6 +94,7 @@ multiEventListener('load', image, () => {
 
     createLines();
     state.snapLines();
+    state.autoPath();
 });
 
 multiEventListener('resize', window, () => {
@@ -208,6 +209,7 @@ function State() {
         }
 
         autoPath() {
+            clearPath();
             this.toggleTrace();
             worker.postMessage({
                 type: 'auto',
@@ -477,7 +479,6 @@ function setUpImageData() {
     const new_image = new Image;
     new_image.src = image.src;
     processing_context.drawImage(new_image, 0, 0);
-    processing_context.drawImage(new_image, 0, 0, 1, 1); // top left pixel is average colour of image
     imageData = processing_context.getImageData(0, 0, new_image.naturalWidth, new_image.naturalHeight);
     worker.postMessage({
         type: 'setData',

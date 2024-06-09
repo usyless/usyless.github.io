@@ -1,11 +1,7 @@
 'use strict';
 
-let imageData;
-let currentTrace = new Map();
-let simplifiedTrace = [];
-let previousTrace = new Map();
-let traceColour = '#ff0000';
-let previousColour;
+let imageData, currentTrace = new Map(), simplifiedTrace = [],
+    previousTrace = new Map(), traceColour = '#ff0000', previousColour, backgroundColour;
 
 onmessage = (e) => {
     switch (e.data['type']) {
@@ -27,6 +23,7 @@ onmessage = (e) => {
         }
         case "setData": {
             imageData = e.data['imageData'];
+            backgroundColour = getApproximateBackgroundColour();
             break;
         }
         case "auto": {
@@ -50,16 +47,20 @@ class RGB {
     B;
     values = 1;
 
-    constructor(x, y, tolerance) {
+    constructor(x, y, tolerance, rgbArr) {
         this.tolerance = tolerance;
-        [this.R, this.G, this.B] = RGB.getRGB(x, y);
+        if (x && y) [this.R, this.G, this.B] = RGB.getRGB(x, y);
+        else [this.R, this.G, this.B] = rgbArr;
     }
 
     withinTolerance(x, y) {
-        const [newR, newG, newB] = RGB.getRGB(x, y),
-            rmean = (this.R + newR) / 2,
+        return this.getDifference(x, y) <= this.tolerance;
+    }
+
+    getDifference(x, y) {
+        const [newR, newG, newB] = RGB.getRGB(x, y), rmean = (this.R + newR) / 2,
             r = this.R - newR, g = this.G - newG, b = this.B - newB;
-        return Math.sqrt((((512 + rmean) * r * r) >> 8) + 4 * g * g + (((767 - rmean) * b * b) >> 8)) <= this.tolerance;
+        return Math.sqrt((((512 + rmean) * r * r) >> 8) + 4 * g * g + (((767 - rmean) * b * b) >> 8));
     }
 
     addToAverage(x, y) {
@@ -73,9 +74,9 @@ class RGB {
     getTraceColourHex() {
         const s = Math.min(this.R, this.G, this.B);
         if (s === this.R) return '#ff0000';
-        if (s === this.G) return '#00ff00';
-        return '#0000ff';
+        return '#00ff7b';
     }
+
     static biggestRGBDifference(x, y) {
         const [R, G, B] = RGB.getRGB(x, y);
         return Math.max(R, G, B) - Math.min(R, G, B);
@@ -84,13 +85,8 @@ class RGB {
     static getRGB(x, y) {
         const v = (y * imageData.width * 4) + (x * 4);
         return [imageData.data[v], // R
-                imageData.data[v + 1], // G
-                imageData.data[v + 2]]; // B
-    }
-
-    static getGrayscale(x, y) {
-        const [R, G, B] = RGB.getRGB(x, y);
-        return (R + G + B) / 3;
+            imageData.data[v + 1], // G
+            imageData.data[v + 2]]; // B
     }
 }
 
@@ -254,39 +250,46 @@ function addPoint(x, y) {
     cleanDataSendTrace();
 }
 
-function autoTrace(data) { // calculate based on difference to background, bigger difference = more likely maybe?
-    const h = imageData.height, maxYRange = Math.floor(h * 0.35),
+function autoTrace(data) {
+    const h = imageData.height, maxYRange = Math.floor(h * 0.2),
         middleY = Math.floor(h / 2), yCond = middleY - maxYRange,
-        middleX = Math.floor(imageData.width / 2);
-    let bestY, c, currentDiff = 0;
-    for (let y = middleY + maxYRange; y > yCond; y--) {
-        c = RGB.biggestRGBDifference(middleX, y);
-        if (c > currentDiff) {
-            bestY = y;
-            currentDiff = c;
+        middleX = Math.floor(imageData.width / 2), traces = [];
+    getPotentialTrace(RGB.biggestRGBDifference, 10);
+    getPotentialTrace((x, y) => backgroundColour.getDifference(x, y), 10);
+    for (const trace of traces) if (trace[0].size > currentTrace.size) [currentTrace, traceColour] = trace;
+    cleanDataSendTrace();
+
+    function getPotentialTrace(func, tolerance) {
+        let bestY, c, currentDiff = 0;
+        for (let y = middleY + maxYRange; y > yCond; y--) {
+            c = func(middleX, y);
+            if (c >= tolerance && c > currentDiff) {
+                bestY = y;
+                currentDiff = c;
+            }
+        }
+        if (bestY) {
+            data['x'] = middleX;
+            data['y'] = bestY;
+            traces.push(getTrace(data));
         }
     }
-    data['x'] = middleX;
-    data['y'] = bestY;
-    trace(data);
 }
 
-function trace(data) {
-    savePreviousTrace();
+function getTrace(data) {
     const x = parseInt(data['x'], 10), y = parseInt(data['y'], 10), w = imageData.width, h = imageData.height,
         maxLineHeight = Math.max(0, Math.floor(h * 0.05) + parseIntDefault(data['maxLineHeightOffset'], 0)),
         maxJump = Math.max(0, Math.floor(w * 0.02)) + parseIntDefault(data['maxJumpOffset'], 0),
-        colour = new RGB(x, y, parseInt(data['colourTolerance'], 10));
+        colour = new RGB(x, y, parseInt(data['colourTolerance'], 10)), newTrace = new Map();
     trace(x, -1);
     trace(x + 1, 1);
+    return [newTrace, colour.getTraceColourHex()];
 
-    traceColour = colour.getTraceColourHex();
-    cleanDataSendTrace();
     function trace(start, step) {
         let n, m = 0, j = y, max, colours;
         for (; start >= 0 && start < w; start += step) {
             colours = [];
-            max = maxLineHeight + m*2;
+            max = maxLineHeight + (m * 2);
             checkPixel(start, j);
             for (let z = 1; z <= max; z++) {
                 checkPixel(start, j + z);
@@ -300,7 +303,7 @@ function trace(data) {
                 }
                 j = Math.floor(m / colours.length);
                 m = 0;
-                currentTrace.set(start, j);
+                newTrace.set(start, j);
                 continue;
             }
             if (m < maxJump) m++;
@@ -314,20 +317,18 @@ function trace(data) {
     }
 }
 
+function trace(data) {
+    savePreviousTrace();
+    [currentTrace, traceColour] = getTrace(data);
+    cleanDataSendTrace();
+}
+
 function snap(data) {
-    const line = data['line'], pos = Math.floor(line.pos),
-        imgAvg = RGB.getGrayscale(0, 0), valid = [];
-    let s = imageData.height, z = imageData.width, direction = parseInt(data['dir']), func = (x, y) => [x, y];
-    if (line.dir === "y") {
-        s = imageData.width;
-        z = imageData.height;
-        func = (x, y) => [y, x]
-    }
+    const line = data['line'], y = line.dir === "y", valid = [],
+        s = y ? imageData.width : imageData.height, z = y ? imageData.height : imageData.width,
+        func = y ? (x, y) => [y, x] : (x, y) => [x, y];
 
-    const lower = Math.floor(s * 0.2), upper = Math.floor(s * 0.8),
-        jump = Math.floor(z * 0.01);
-
-    customFor(pos + (jump * direction), z, direction, lower, upper, upper - lower, func);
+    customFor(Math.floor(line.pos), z, data['dir'], Math.floor(s * 0.2), Math.floor(s * 0.8), func);
 
     if (valid.length > 0) {
         let sum = 0;
@@ -339,18 +340,39 @@ function snap(data) {
         });
     }
 
-    function customFor(start, max, direction, lower, upper, total, func) {
+    function customFor(start, max, direction, lower, upper, func) {
+        const bound = Math.floor(0.9 * (upper - lower));
+        start += (Math.floor(max * 0.01) * direction); // CALCULATE JUMP DISTANCE BETTER (find average width of all lines?)
         for (let i = start; i < max && i >= 0; i += direction) {
-            if (lineColourInTolerance(i, lower, upper, total, func)) valid.push(i);
+            if (lineColourInTolerance(i, lower, upper, bound, func)) valid.push(i);
             else if (valid.length > 0) break;
         }
     }
 
-    function lineColourInTolerance(pos, lowerBound, upperBound, total, func) {
+    function lineColourInTolerance(pos, lowerBound, upperBound, bound, func) {
         let trueCount = 0;
-        for (let j = upperBound; j > lowerBound; j--) {
-            if (Math.abs(RGB.getGrayscale(...func(pos, j)) - imgAvg) > 10) trueCount++;
-        }
-        if (trueCount >= 0.95 * total) return true;
+        for (let j = upperBound; j > lowerBound; j--) if (!backgroundColour.withinTolerance(...func(pos, j))) trueCount++; // potentially store every difference and do some sort of L1/L2 norm
+        return trueCount >= bound;
     }
+}
+
+function getApproximateBackgroundColour() {
+    const colours = {}, w = imageData.width, h = imageData.height,
+        xJump = Math.floor(w * 0.01), yJump = Math.floor(h * 0.01);
+    for (let x = 0; x < w; x += xJump) {
+        for (let y = 0; y < h; y += yJump) {
+            const bg = RGB.getRGB(x, y);
+            if (colours[bg]) colours[bg]++;
+            else colours[bg] = 1;
+        }
+    }
+    let most = 0, colour;
+    for (const c in colours) {
+        const d = colours[c];
+        if (d > most) {
+            most = d;
+            colour = c;
+        }
+    }
+    return new RGB(undefined, undefined, 10, JSON.parse(`[${colour}]`));
 }

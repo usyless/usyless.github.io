@@ -1,5 +1,6 @@
 # UsyTrace: Online Frequency Response Tracer
 
+- https://usyless.github.io/trace
 - All Processing is done on device and no analytics are performed. 
 - #### Feel free to contribute or suggest changes
 - #### Found a bug? Report it to @usy_ on Discord!
@@ -7,10 +8,11 @@
 ## General use
 - Press "Choose Image" and choose an image to trace from
 - Align the top and bottom lines for SPL and Frequency to known values, then input those in the sidebar
-- Press "Auto Trace", if it fails, press "Clear Path" then refer below
+- The line should be traced initially, if it is not, refer below
 - Press "Export Trace"
 
 ### If auto trace fails
+- Click "Clear Path" to make sure any auto traced line does not mess with your new trace
 - Click "Select Path", then click on your line to trace
 - If you find that it hasn't selected the whole line, you can click on the region it has not selected to try to select more (Adjust settings as a last resort)
 - Made a mistake? The undo button can bring you back one trace

@@ -109,7 +109,6 @@ select {
     overflow-y: scroll;
     text-align: center;
     min-width: 130px;
-    width: 200px;
     max-width: 200px;
     background-color: #2b2d30;
     flex: 1;
@@ -149,7 +148,7 @@ select {
 }
 
 #main-content {
-    flex: 2;
+    flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
