@@ -276,11 +276,12 @@ function autoTrace(data) {
     }
 }
 
-function getTrace(data) {
+function getTrace(data, oldTrace) {
     const x = parseInt(data['x'], 10), y = parseInt(data['y'], 10), w = imageData.width, h = imageData.height,
         maxLineHeight = Math.max(0, Math.floor(h * 0.05) + parseIntDefault(data['maxLineHeightOffset'], 0)),
         maxJump = Math.max(0, Math.floor(w * 0.02)) + parseIntDefault(data['maxJumpOffset'], 0),
-        colour = new RGB(x, y, parseInt(data['colourTolerance'], 10)), newTrace = new Map();
+        colour = new RGB(x, y, parseInt(data['colourTolerance'], 10)),
+        newTrace = oldTrace ? oldTrace : new Map();
     trace(x, -1);
     trace(x + 1, 1);
     return [newTrace, colour.getTraceColourHex()];
@@ -319,7 +320,7 @@ function getTrace(data) {
 
 function trace(data) {
     savePreviousTrace();
-    [currentTrace, traceColour] = getTrace(data);
+    [currentTrace, traceColour] = getTrace(data, currentTrace);
     cleanDataSendTrace();
 }
 
