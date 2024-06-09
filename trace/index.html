@@ -17,19 +17,19 @@
         <div>
             <h1>UsyTrace</h1>
         </div>
-        <div onclick="clickFileInput()" class="divButton sidebarSection" id="imageInputDiv">
-            <input onchange="loadNewImage()" type='file' id='imageInput' class="hidden" accept="image/*"/>
+        <div onclick="fileInput.click()" class="divButton sidebarSection" id="imageInputDiv">
+            <input onchange="state.loadNewImage()" type='file' id='imageInput' class="hidden" accept="image/*"/>
             <label>Choose Image</label>
         </div>
         <div class="sidebarSection">
             <div>
-                <button onclick="autoPath()" id="autoPath" class="disableme">Auto Trace</button>
+                <button onclick="state.autoPath()" id="autoPath" class="disableme">Auto Trace</button>
             </div>
             <div>
-                <button onclick="togglePath()" id="selectPath" def="Select Path" alt="Stop Selecting" class="disableme">Select Path</button>
+                <button onclick="state.togglePath()" id="selectPath" def="Select Path" alt="Stop Selecting" class="disableme">Select Path</button>
             </div>
             <div>
-                <button onclick="togglePoint()" id="selectPoint" def="Add Point" alt="Stop Adding Points" class="disableme">Add Point</button>
+                <button onclick="state.togglePoint()" id="selectPoint" def="Add Point" alt="Stop Adding Points" class="disableme">Add Point</button>
             </div>
             <div>
                 <button onclick="clearPathAndWorker()" class="disableme">Clear Path</button>

@@ -487,22 +487,6 @@ function setUpImageData() {
 }
 
 // HTML Functions
-function togglePath() {
-    state.togglePath();
-}
-
-function togglePoint() {
-    state.togglePoint();
-}
-
-function loadNewImage() {
-    state.loadNewImage();
-}
-
-function clickFileInput() {
-    fileInput.click()
-}
-
 function minVal(e) {
     if (e.value < e.min) e.value = e.min;
 }
@@ -515,11 +499,5 @@ function undo() {
 }
 
 function restoreDefault() {
-    for (const val in defaults) {
-        document.getElementById(val).value = defaults[val];
-    }
-}
-
-function autoPath() {
-    state.autoPath();
+    for (const val in defaults) document.getElementById(val).value = defaults[val];
 }
