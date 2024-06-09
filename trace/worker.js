@@ -340,6 +340,8 @@ function snap(data) {
         });
     }
 
+    // find local minima/maxima rather than global, dont use background colour
+
     function customFor(start, max, direction, lower, upper, func) {
         const bound = Math.floor(0.9 * (upper - lower));
         start += (Math.floor(max * 0.01) * direction); // CALCULATE JUMP DISTANCE BETTER (find average width of all lines?)
