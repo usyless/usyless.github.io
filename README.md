@@ -24,7 +24,7 @@
 ## Trace Settings:
 ### Colour Tolerance
 - Adjust the maximum tolerance for colours that the tracer takes into account when tracing the line
-- Increase this if your line is not a single colour
+- Increase this if the tracer isn't selecting the whole line
 - Decrease this if the trace is jittery
 ### Max Line Thickness Offset
 - Adjust the offset of the maximum thickness of the line being traced in pixels
