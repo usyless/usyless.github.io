@@ -1,8 +1,7 @@
 'use strict';
 
 // global constants
-let traceSVG = document.getElementById('trace'),
-    lineSVG = document.getElementById('lines');
+let lineSVG = document.getElementById('lines');
 
 const image = document.getElementById('uploadedImage'),
     main = document.getElementById('main'),
@@ -271,9 +270,7 @@ function State() {
 }
 
 function clearPath() {
-    const newSvg = traceSVG.cloneNode(false);
-    traceSVG.parentElement.replaceChild(newSvg, traceSVG);
-    traceSVG = newSvg;
+    setTracePath('', '#ff0000', 0);
 }
 
 function clearPathAndWorker() {
@@ -326,15 +323,7 @@ function createWorker() {
         worker = new Worker("./worker.js");
         worker.onmessage = (e) => {
             if (e.data['type'] === "done") {
-                clearPath();
-                const traceData = e.data['trace'];
-                if (traceData.length > 1) {
-                    const l = traceData.length, lineWidth = height * 0.005;
-                    for (let i = 0; i < l - 1; i++) {
-                        traceSVG.appendChild(createSVGLine(traceData[i][0],
-                            traceData[i][1], traceData[i + 1][0], traceData[i + 1][1], e.data['colour'], lineWidth));
-                    }
-                }
+                setTracePath(e.data['d'], e.data['colour'], height * 0.005);
                 state.toggleTrace();
             } else if (e.data['type'] === 'export') {
                 const a = document.createElement("a"),
@@ -359,6 +348,13 @@ function createWorker() {
 function multiEventListener(events, target, callback) {
     if (typeof (events) !== "object") events = [events];
     events.forEach((ev) => target.addEventListener(ev, callback));
+}
+
+function setTracePath(d, colour, width) {
+    const path = document.getElementById('trace').firstElementChild;
+    path.setAttribute('d', d);
+    path.setAttribute('stroke', colour);
+    path.setAttribute('stroke-width', width);
 }
 
 function createSVGLine(x1, y1, x2, y2, colour, width) {

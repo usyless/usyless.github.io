@@ -185,9 +185,15 @@ function cleanDataSendTrace() {
     cleanUpData();
     postMessage({
         type: "done",
-        trace: simplifiedTrace,
+        d: traceToSVGPath(simplifiedTrace),
         colour: traceColour
     });
+}
+
+function traceToSVGPath(trace) {
+    let d = 'M' + trace[0][0] + ' ' + trace[0][1];
+    for (let i = 1; i < trace.length; i++) d += ' L' + trace[i][0] + ' ' + trace[i][1];
+    return d;
 }
 
 function clearTrace() {
@@ -250,7 +256,7 @@ function addPoint(x, y) {
     cleanDataSendTrace();
 }
 
-function autoTrace(data) {
+function autoTrace(data) { // only checking middle 40% for now, check outer 40% but with less weight later maybe, also maybe check every possible pixel
     const h = imageData.height, maxYRange = Math.floor(h * 0.2),
         middleY = Math.floor(h / 2), yCond = middleY - maxYRange,
         middleX = Math.floor(imageData.width / 2), traces = [];

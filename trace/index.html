@@ -6,13 +6,15 @@
     <title>UsyTrace</title>
     <meta property="og:title" content="UsyTrace"/>
     <meta property="og:description" content="Online Frequency Response Tracing"/>
-    <meta property="og:image" content="../icons/icon.png"/>
-    <link rel="icon" type="image/x-icon" href="../icons/icon.png">
-    <link rel="icon" type="image/png" href="../icons/icon.png">
-    <link rel="shortcut icon" type="image/png" href="../icons/icon.png">
     <link rel="stylesheet" href="trace.css">
 </head>
 <body>
+<noscript>
+    <div>
+        <h1>It seems your JavaScript is disabled.
+            This website will not function without JavaScript, please enable it to use the site.</h1>
+    </div>
+</noscript>
 <div id="overlay" class="hidden">
     <h1>Tracing In Progress</h1>
 </div>
@@ -23,7 +25,7 @@
         </div>
         <div onclick="fileInput.click()" class="divButton sidebarSection" id="imageInputDiv">
             <input onchange="state.loadNewImage()" type='file' id='imageInput' class="hidden" accept="image/*"/>
-            <label>Choose Image</label>
+            Choose Image
         </div>
         <div class="sidebarSection">
             <div>
@@ -153,8 +155,8 @@
             <a href="https://github.com/usyless/usyless.github.io?tab=readme-ov-file#general-use" target="_blank">Help/Repository</a>
         </div>
         <div class="sidebarSection">
-            <p>Facing Bugs? First try to reload the page fully by pressing Ctrl+F5 to make sure you're not using an old
-                cached version of the site!</p>
+            Facing Bugs? First try to reload the page fully by pressing Ctrl+F5 to make sure you're not using an old
+                cached version of the site!
         </div>
         <div class="sidebarSection">
             <p>Report An Issue: Send a message to @usy_ on Discord</p>
@@ -166,7 +168,9 @@
             <div id="glass" class="hidden magnify"></div>
             <img id='uploadedImage' src='' alt='' class="canvasSizing"/>
             <svg id="lines" class="canvasSizing"></svg>
-            <svg id="trace" class="canvasSizing removePointerEvents"></svg>
+            <svg id="trace" class="canvasSizing removePointerEvents">
+                <path stroke="#ff0000" fill="transparent" d=""></path>
+            </svg>
             <h1 temp_thing="true">Please Choose An Image (Or drop an image on the page)</h1>
         </div>
     </div>
