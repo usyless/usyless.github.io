@@ -7,3 +7,7 @@
 ## Derpibooru Tag Autocomplete
 ### https://usyless.github.io/dta
 ### Repo: https://github.com/usyless/Derpibooru-Tag-Autocomplete
+
+## Twitter Improvements
+### https://usyless.github.io/twitter-improvements
+### Repo: https://github.com/usyless/twitter-improvements
