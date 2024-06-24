@@ -91,6 +91,7 @@ multiEventListener('load', image, () => { // image context switching
         ]
         d.d = "";
         d.lines = lines;
+        createLines();
         state.snapLines();
         state.autoPath();
         d.initial = false;
@@ -352,7 +353,7 @@ function updateSizeRatio() {
 
 function createWorker() {
     if (!worker) {
-        worker = new Worker("./worker.js");
+        worker = new Worker("./worker_wasm.js");
         worker.onmessage = (e) => {
             const d = e.data, imgData = imageMap.get(d.src);
 
