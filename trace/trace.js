@@ -1,7 +1,7 @@
 'use strict';
 
 // show site out of date alert
-const VERSION = 2;
+const VERSION = 3;
 (async () => {
     let r = await fetch('https://usyless.pythonanywhere.com/api/version', {cache: 'no-store'});
     if (r.status === 200) {
@@ -19,6 +19,9 @@ const imageMap = new Map(),
     fileInput = document.getElementById('imageInput'),
     state = State(),
     defaults = {
+        "FRTop": 20000,
+        "FRBot": 20,
+
         "colourTolerance": 67,
         "maxLineHeightOffset": 0,
         "maxJumpOffset": 0,
@@ -30,8 +33,6 @@ const imageMap = new Map(),
 
         "SPLTop": "",
         "SPLBot": "",
-        "FRTop": "",
-        "FRBot": ""
     };
 
 // create global variables
@@ -44,6 +45,18 @@ state.toInitial();
 
 // assign event listeners
 multiEventListener('dragstart', image, (e) => e.preventDefault());
+
+{ // Paste image stuff
+    multiEventListener('paste', document, (e) => {
+        e.preventDefault();
+        const d = new DataTransfer();
+        for (const item of e.clipboardData.items) if (item.kind === 'file' && item.type.includes('image/')) d.items.add(item.getAsFile());
+        if (d.files.length > 0) {
+            fileInput.files = d.files;
+            fileInput.dispatchEvent(new Event('change'));
+        }
+    });
+}
 
 { // Drag and drop stuff
     multiEventListener('dragover', main, (e) => {
