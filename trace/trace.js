@@ -1,7 +1,7 @@
 'use strict';
 
 { // version stuff
-    const VERSION = 5;
+    const VERSION = 6;
     window.history.pushState({}, '', window.location.href.split('?')[0]);
     (async () => {
         let r = await fetch('https://usyless.pythonanywhere.com/api/version', {cache: 'no-store'});
@@ -389,7 +389,7 @@ function updateSizeRatio() {
 
 function createWorker() {
     if (!worker) {
-        worker = new Worker("./worker-1721854248.js");
+        worker = new Worker("./worker-1721854840.js");
         worker.onmessage = (e) => {
             const d = e.data, imgData = imageMap.get(d.src);
 
