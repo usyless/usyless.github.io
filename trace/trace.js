@@ -1,5 +1,24 @@
 'use strict';
 
+{ // version stuff
+    const VERSION = 5;
+    window.history.pushState({}, '', window.location.href.split('?')[0]);
+    (async () => {
+        let r = await fetch('https://usyless.pythonanywhere.com/api/version', {cache: 'no-store'});
+        if (r.status === 200) {
+            r = await r.json();
+            if (window.localStorage.getItem('update') !== 'true' && VERSION < parseInt(r['v'])) {
+                const b = document.getElementById('updateAvailable');
+                b.addEventListener('click', () => {
+                    window.localStorage.setItem('update', 'true');
+                    window.open(window.location.href + '?update', '_self'); // updates html
+                });
+                b.classList.remove('hidden');
+            }
+        }
+    })();
+}
+
 // global constants
 let lineSVG = document.getElementById('lines');
 
@@ -7,8 +26,12 @@ const imageMap = new Map(),
     image = document.getElementById('uploadedImage'),
     main = document.getElementById('main'),
     fileInput = document.getElementById('imageInput'),
+    glass = document.getElementById('glass'),
     state = State(),
     defaults = {
+        "FRTop": 20000,
+        "FRBot": 20,
+
         "colourTolerance": 67,
         "maxLineHeightOffset": 0,
         "maxJumpOffset": 0,
@@ -20,12 +43,10 @@ const imageMap = new Map(),
 
         "SPLTop": "",
         "SPLBot": "",
-        "FRTop": "",
-        "FRBot": ""
     };
 
 // create global variables
-let worker, lines, sizeRatio, imageData, width, height;
+let worker, lines, sizeRatio, width, height;
 
 // call initial functions
 restoreDefault();
@@ -34,6 +55,18 @@ state.toInitial();
 
 // assign event listeners
 multiEventListener('dragstart', image, (e) => e.preventDefault());
+
+{ // Paste image stuff
+    multiEventListener('paste', document, (e) => {
+        e.preventDefault();
+        const d = new DataTransfer();
+        for (const item of e.clipboardData.items) if (item.kind === 'file' && item.type.includes('image/')) d.items.add(item.getAsFile());
+        if (d.files.length > 0) {
+            fileInput.files = d.files;
+            fileInput.dispatchEvent(new Event('change'));
+        }
+    });
+}
 
 { // Drag and drop stuff
     multiEventListener('dragover', main, (e) => {
@@ -54,14 +87,18 @@ multiEventListener('dragstart', image, (e) => e.preventDefault());
 }
 
 { // magnifying glass stuff
-    const glass = document.getElementById('glass');
     multiEventListener(['mousemove'], image, (e) => {
         e.preventDefault();
         const parentRect = image.parentElement.getBoundingClientRect(), m = getMouseCoords(e),
             v = (Math.floor((m.yRel) * sizeRatio) * image.naturalWidth * 4) + (Math.floor((m.xRel) * sizeRatio) * 4);
         glass.style.left = `${m.x - parentRect.left}px`;
         glass.style.top = `${m.y - parentRect.top}px`;
-        glass.style.backgroundColor = `rgb(${imageData[v]}, ${imageData[v + 1]}, ${imageData[v + 2]})`;
+        worker.postMessage({
+            src: image.src,
+            type: 'getPixelColour',
+            x: m.xRel * sizeRatio,
+            y: m.yRel * sizeRatio
+        });
         glass.classList.remove('hidden');
     });
     multiEventListener(['mouseup', 'mouseleave', 'mouseout', 'touchend', 'touchcancel'], image, () => glass.classList.add('hidden'));
@@ -96,7 +133,6 @@ multiEventListener('load', image, () => { // image context switching
         state.autoPath();
         d.initial = false;
     } else {
-        imageData = d.imageData;
         lines = d.lines;
         setTracePath(d.d, d.colour, height * 0.005);
     }
@@ -353,7 +389,7 @@ function updateSizeRatio() {
 
 function createWorker() {
     if (!worker) {
-        worker = new Worker("./worker.js");
+        worker = new Worker("./worker-24.07.2024.js");
         worker.onmessage = (e) => {
             const d = e.data, imgData = imageMap.get(d.src);
 
@@ -373,7 +409,8 @@ function createWorker() {
                     window.URL.revokeObjectURL(url);
                 }, 0);
             } else if (d.src === image.src) {
-                if (d.type === 'snapLine') {
+                if (d.type === 'getPixelColour') glass.style.backgroundColor = `rgb(${d.pixelColour})`;
+                else if (d.type === 'snapLine') {
                     const newLine = d.line, line = lines[newLine.i];
                     line.pos = newLine.pos;
                     moveLine(line);
@@ -518,7 +555,7 @@ function setUpImageData() {
     processing_canvas.height = height;
     new_image.src = image.src;
     processing_context.drawImage(new_image, 0, 0);
-    imageData = processing_context.getImageData(0, 0, new_image.naturalWidth, new_image.naturalHeight);
+    const imageData = processing_context.getImageData(0, 0, new_image.naturalWidth, new_image.naturalHeight);
     worker.postMessage({
         src: image.src,
         type: 'setData',
@@ -526,9 +563,6 @@ function setUpImageData() {
         width: imageData.width,
         height: imageData.height
     }, [imageData.data.buffer]);
-    // duplicate copy because silly but prevents the other thing being copied
-    imageData = processing_context.getImageData(0, 0, new_image.naturalWidth, new_image.naturalHeight).data;
-    imageMap.get(image.src).imageData = imageData;
 }
 
 // HTML Functions

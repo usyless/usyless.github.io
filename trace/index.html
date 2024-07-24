@@ -27,6 +27,9 @@
         <div>
             <h1>UsyTrace</h1>
         </div>
+        <div class="sidebarSection divButton hidden" id="updateAvailable">
+            Update Available, click here to update.
+        </div>
         <div onclick="fileInput.click()" class="divButton sidebarSection" id="imageInputDiv">
             <input onchange="state.loadNewImage()" type='file' id='imageInput' class="hidden" multiple="multiple" accept="image/*"/>
             Choose Images
@@ -96,6 +99,9 @@
                 <label for="snap">Buttons snap to axis</label>
                 <input id="snap" type="checkbox" checked>
             </div>
+            <div>
+                Input the chosen values with the bars on the image into the fields above
+            </div>
         </div>
         <div class="sidebarSection">
             <div>
@@ -151,11 +157,7 @@
             <a href="https://github.com/usyless/UsyTrace?tab=readme-ov-file#general-use" target="_blank">Help/Repository</a>
         </div>
         <div class="sidebarSection">
-            Facing Bugs? First try to reload the page fully by pressing Ctrl+F5 to make sure you're not using an old
-                cached version of the site!
-        </div>
-        <div class="sidebarSection">
-            <p>Report An Issue: Send a message to @usy_ on Discord</p>
+            <p>Report an issue or suggest features: Send a message to @usy_ on Discord</p>
         </div>
     </div>
 
@@ -168,7 +170,7 @@
                 <svg id="trace" class="canvasSizing removePointerEvents">
                     <path stroke="#ff0000" fill="transparent" d=""></path>
                 </svg>
-                <h1 temp_thing="">Please Load Images (Or drop any images onto the page)</h1>
+                <h1 temp_thing="">Please Load Images (Or drop any images onto the page, or paste with Ctrl+V)</h1>
             </div>
         </div>
         <div id="imageQueueContainer">
@@ -185,6 +187,6 @@
     </div>
 </div>
 
-<script src='trace.js'></script>
+<script src='init.js'></script>
 </body>
 </html>
