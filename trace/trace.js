@@ -389,7 +389,7 @@ function updateSizeRatio() {
 
 function createWorker() {
     if (!worker) {
-        worker = new Worker("./worker-24.07.2024.js");
+        worker = new Worker("./worker-1721854248.js");
         worker.onmessage = (e) => {
             const d = e.data, imgData = imageMap.get(d.src);
 
