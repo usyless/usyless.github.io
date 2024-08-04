@@ -18,7 +18,7 @@ let db;
 
 if (!window.localStorage.getItem('firstEntry')) {
     alert(`Welcome!
-Make sure to add OLLAMA_ORIGINS=${window.location.hostname} to your environment variables and relaunch ollama for this website to work!`);
+Make sure to add OLLAMA_ORIGINS=${window.location.origin} to your environment variables and relaunch ollama for this website to work!`);
     window.localStorage.setItem('firstEntry', 'h');
 }
 
@@ -116,7 +116,7 @@ function loadModels(models) {
             });
         }
     }).catch(() => {
-        if (confirm(`Unable to find models, are you sure ollama is running and allowed for this domain? (add OLLAMA_ORIGINS=${window.location.hostname} to your environment variables and relaunch ollama, then press OK)`)) {
+        if (confirm(`Unable to find models, are you sure ollama is running and allowed for this domain? (add OLLAMA_ORIGINS=${window.location.origin} to your environment variables and relaunch ollama, then press OK)`)) {
             loadModels();
         }
     });
