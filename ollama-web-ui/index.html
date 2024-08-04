@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollama Web UI</title>
+    <meta content="Simple Ollama web ui." name="description">
+    <meta property="og:title" content="Ollama Web UI">
+    <meta property="og:url" content="https://usyless.uk/ollama-web-ui">
+    <meta property="og:description" content="Simple Ollama web ui">
+    <meta name="keywords" content="usy, ollama, ollama web ui, llm, local llm">
+    <link rel="stylesheet" href="ollama.css">
+</head>
+<body>
+    <div id="settingsPage" class="hidden">
+        <div>
+            <button>Return to web ui</button>
+        </div>
+        <div>
+            <label for="hostName">Custom Hostname: </label>
+            <input type="text" id="hostName" value="http://localhost:11434">
+        </div>
+    </div>
+    <div id="main">
+        <div id="sidebar">
+            <h1>Ollama Web UI</h1>
+            <div class="flex">
+                <select id="modelSelect"></select>
+            </div>
+            <button id="settings">
+                Settings
+            </button>
+            <hr>
+            <button id="newChatButton">
+                New Chat
+            </button>
+            <hr>
+            <div id="chatHistory">
+
+            </div>
+            <button id="deleteChat">
+                Delete Chat
+            </button>
+        </div>
+        <div id="chatOuterContainer">
+            <div id="chatContainer">
+                <div id="chat">
+
+                </div>
+                <div id="chatBox">
+                    <div>
+                        <textarea placeholder="Send a message." rows="1"></textarea>
+                        <button id="sendChatButton">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<script src="ollama.js"></script>
+</body>
+</html>
