@@ -207,7 +207,7 @@ function saveChat() {
 function createChatBubble(user) {
     const segment = document.createElement('div');
     const bubble = document.createElement('div');
-    bubble.classList.add('chatBubble', 'userBubble');
+    bubble.classList.add('chatBubble');
     if (user) {
         bubble.classList.add('userBubble');
         bubble.textContent = input.value;
