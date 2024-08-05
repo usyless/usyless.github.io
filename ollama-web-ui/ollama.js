@@ -324,11 +324,15 @@ async function postMessage() {
             while (true) {
                 const {value, done} = await reader.read();
                 if (done) break;
-                try {
-                    chunk = JSON.parse(decoder.decode(value, {stream: true}));
-                    output.textContent += chunk.response;
-                    output.scrollIntoView({behavior: 'smooth', block: 'end'});
-                } catch (e) {console.error(e);}
+                chunk = decoder.decode(value, {stream: true}).split('\n');
+                for (let line of chunk) {
+                    line = line.trim();
+                    if (line.length > 0) {
+                        line = JSON.parse(line);
+                        output.textContent += line.response;
+                        output.scrollIntoView({behavior: 'smooth', block: 'end'});
+                    }
+                }
             }
             if (chunk.context != null) currentContext = chunk.context;
         } finally {
