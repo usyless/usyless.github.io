@@ -331,10 +331,10 @@ async function postMessage() {
                         line = JSON.parse(line);
                         output.textContent += line.response;
                         output.scrollIntoView({behavior: 'smooth', block: 'end'});
+                        if (line.context != null) currentContext = line.context;
                     }
                 }
             }
-            if (chunk.context != null) currentContext = chunk.context;
         } finally {
             input.disabled = false;
             sendButton.textContent = 'Send';
