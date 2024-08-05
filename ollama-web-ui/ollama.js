@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
             chatHistoryStore.createIndex('messages', 'messages', { unique: false });
         }
         if (e.oldVersion <= 1) {
-            const transaction = db.transaction('chat_history');
+            const transaction = e.target.transaction;
             const objectStore = transaction.objectStore('chat_history');
             objectStore.createIndex('model', 'model', { unique: false });
             if (!window.localStorage.getItem('firstEntry')) alert("Due to the database upgrade, I recommend you delete all old chats, as from now on chats have the model they are begun with stored to avoid issues with switching models with the same context");
