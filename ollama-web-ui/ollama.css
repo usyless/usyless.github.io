@@ -135,6 +135,12 @@ body {
     row-gap: var(--spacing);
 }
 
+#chatWith {
+    text-align: center;
+    padding: var(--padding);
+    box-sizing: border-box;
+}
+
 #chatBox {
     display: flex;
     box-sizing: border-box;

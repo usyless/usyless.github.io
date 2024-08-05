@@ -41,9 +41,11 @@ const input = document.getElementById('input');
 const sendButton = document.getElementById('sendChatButton');
 const newChatButton = document.getElementById('newChatButton');
 const chatHistory = document.getElementById('chatHistory').firstElementChild;
+const chatWith = document.getElementById('chatWith').querySelector('b');
 
 const chat = document.getElementById('chat');
 let currentContext = [];
+let currentModel = null;
 
 let responding = false;
 
@@ -56,7 +58,7 @@ Make sure to add OLLAMA_ORIGINS=${window.location.origin} to your environment va
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const dbOpen = window.indexedDB.open("chat_history", 1);
+    const dbOpen = window.indexedDB.open("chat_history", 2);
     dbOpen.addEventListener("error", () => console.error("Database failed to open"));
     dbOpen.addEventListener("success", () => {
         db = dbOpen.result;
@@ -65,14 +67,25 @@ document.addEventListener('DOMContentLoaded', () => {
     dbOpen.addEventListener("upgradeneeded", (e) => {
         db = e.target.result;
 
-        const chatHistoryStore = db.createObjectStore("chat_history", {
-            keyPath: "id",
-            autoIncrement: true,
-        });
+        if (e.oldVersion <= 0) {
+            const chatHistoryStore = db.createObjectStore("chat_history", {
+                keyPath: "id",
+                autoIncrement: true,
+            });
 
-        chatHistoryStore.createIndex('name', 'name', { unique: false });
-        chatHistoryStore.createIndex('context', 'context', { unique: false });
-        chatHistoryStore.createIndex('messages', 'messages', { unique: false });
+            chatHistoryStore.createIndex('name', 'name', { unique: false });
+            chatHistoryStore.createIndex('context', 'context', { unique: false });
+            chatHistoryStore.createIndex('messages', 'messages', { unique: false });
+        }
+        if (e.oldVersion <= 1) {
+            const transaction = db.transaction('chat_history');
+            const objectStore = transaction.objectStore('chat_history');
+            objectStore.createIndex('model', 'model', { unique: false });
+            if (!window.localStorage.getItem('firstEntry')) alert("Due to the database upgrade, I recommend you delete all old chats, as from now on chats have the model they are begun with stored to avoid issues with switching models with the same context");
+            transaction.addEventListener('complete', ()=> {
+                console.log("Successfully added 'model' to database");
+            });
+        }
     });
 
     input.addEventListener('input', (e) => {
@@ -103,6 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (responding) sendButton.click();
         chatHistory.querySelectorAll('.selected').forEach((element) => element.classList.remove('selected'));
         currentContext = [];
+        currentModel = null;
+        chatWith.textContent = modelSelect.value;
         chat.removeAttribute('data-id');
         responding = false;
         chat.innerHTML = '';
@@ -144,12 +159,13 @@ function loadModels() {
             modelSelect.appendChild(option);
 
             const previous_model = window.localStorage.getItem('model');
-            if (previous_model != null && models.map((m) => m.name).includes(previous_model)) modelSelect.value = previous_model;
-
-            modelSelect.addEventListener('change', () => {
-                window.localStorage.setItem('model', modelSelect.value);
-            });
+            if (previous_model != null && model.name === previous_model) modelSelect.value = previous_model;
         }
+        modelSelect.addEventListener('change', () => {
+            window.localStorage.setItem('model', modelSelect.value);
+            if (currentModel == null) chatWith.textContent = modelSelect.value;
+        });
+        modelSelect.dispatchEvent(new Event('change'));
     }).catch(() => {
         if (confirm(`Unable to find models, are you sure ollama is running and allowed for this domain? (add OLLAMA_ORIGINS=${window.location.origin} to your environment variables and relaunch ollama, then press OK)`)) {
             loadModels();
@@ -176,7 +192,11 @@ function saveChat() {
                 result.messages = chatInfo.messages;
                 objectStore.put(result);
             });
-        } else objectStore.add(chatInfo);
+        } else {
+            chatInfo.model = modelSelect.value;
+            currentModel = modelSelect.value;
+            objectStore.add(chatInfo);
+        }
         transaction.addEventListener('complete', () => {
             if (!id) displayChatHistory(id);
         });
@@ -212,6 +232,8 @@ function loadChat(button) {
     objectStore.get(id).addEventListener('success', (e) => {
         const result = e.target.result;
         currentContext = result.context;
+        currentModel = result.model || modelSelect.value; // to ensure compatibility with old chats, falls back tog modelSelect value
+        chatWith.textContent = currentModel;
         let i = 0;
         for (const message of result.messages) {
             const bubble = i % 2 === 0 ? createChatBubble(true) : createChatBubble(false);
@@ -275,12 +297,11 @@ async function postMessage() {
             sendButton.addEventListener('click', cancelButtonCallback, {once: true});
 
             const body = {
-                model: modelSelect.value,
                 prompt: prompt,
                 context: currentContext,
                 options: {}
             }
-
+            body.model = currentModel || modelSelect.value;
             if (context_length.value != null) body.options.num_ctx = parseInt(context_length.value);
             if (temperature.value != null) body.options.temperature = parseInt(temperature.value);
             if (system_prompt.value != null) body.system = system_prompt.value;
