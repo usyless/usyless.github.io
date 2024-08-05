@@ -248,6 +248,7 @@ function displayChatHistory(reselect_id) {
     const transaction = db.transaction('chat_history');
     transaction.objectStore('chat_history').openCursor().addEventListener('success', (e) => {
         const cursor = e.target.result;
+        if (chatHistory.firstChild.nodeName === '#text') chatHistory.firstChild.remove();
         if (cursor) {
             let button = document.querySelector(`button[data-id="${cursor.value.id}"]`);
             if (button == null) button = createChatHistoryEntry(cursor.value.title, cursor.value.id);
