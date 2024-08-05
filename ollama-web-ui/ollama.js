@@ -1,13 +1,46 @@
-let api_address = window.localStorage.getItem('api_address');
-if (!api_address) {
-    api_address = 'http://localhost:11434';
+let api_address = {
+        value: null,
+        default_value: 'http://localhost:11434',
+        id: 'api_address'
+    },
+    context_length = {
+        value: null,
+        default_value: null,
+        id: 'context_length',
+    },
+    system_prompt = {
+        value: null,
+        default_value: null,
+        id: 'system_prompt',
+    },
+    temperature = {
+        value: null,
+        default_value: null,
+        id: 'temperature',
+    };
+
+for (let setting of [api_address, context_length, system_prompt, temperature]) {
+    const elem = document.getElementById(setting.id);
+    setting.value = window.localStorage.getItem(setting.id) || setting.default_value;
+    if (setting.value !== setting.default_value) elem.value = setting.value;
+
+    elem.addEventListener('input', (e) => {
+        const newValue = e.target.value;
+        if (newValue !== setting.default_value && newValue.length > 0) {
+            window.localStorage.setItem(setting.id, newValue);
+            setting.value = newValue;
+        } else {
+            window.localStorage.removeItem(setting.id);
+            setting.value = setting.default_value;
+        }
+    });
 }
 
 const modelSelect = document.getElementById('modelSelect');
-const input = document.querySelector('textarea');
+const input = document.getElementById('input');
 const sendButton = document.getElementById('sendChatButton');
 const newChatButton = document.getElementById('newChatButton');
-const chatHistory = document.getElementById('chatHistory');
+const chatHistory = document.getElementById('chatHistory').firstElementChild;
 
 const chat = document.getElementById('chat');
 let currentContext = [];
@@ -42,19 +75,25 @@ document.addEventListener('DOMContentLoaded', () => {
         chatHistoryStore.createIndex('messages', 'messages', { unique: false });
     });
 
-
     input.addEventListener('input', (e) => {
         e.target.style.height = 'auto';
         e.target.style.height = `${e.target.scrollHeight}px`;
     });
+    let holding_shift = false;
     input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
+        if (e.key === 'Shift') holding_shift = true;
+        else if (e.key === 'Enter' && !holding_shift) {
             e.preventDefault();
             sendButton.click();
         }
     });
+    input.addEventListener('keyup', (e) => {
+        if (e.key === 'Shift') holding_shift = false
+    });
+    input.addEventListener('focusout', () => holding_shift = false);
+    document.addEventListener('visibilitychange', () => holding_shift = false);
     sendButton.addEventListener('click', () => {
-        if (!responding) {
+        if (!responding && input.value.length > 0) {
             createChatBubble(true);
             saveChat();
             postMessage();
@@ -68,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
         responding = false;
         chat.innerHTML = '';
         input.value = '';
+        input.dispatchEvent(new Event('input'));
         sendButton.textContent = 'Send';
         input.focus();
     });
@@ -84,23 +124,18 @@ document.addEventListener('DOMContentLoaded', () => {
         } else alert("No chat to delete!");
     });
     document.getElementById('settings').addEventListener('click', () => {
-        document.getElementById('settingsPage').classList.remove('hidden');
-        document.getElementById('main').classList.add('hidden');
+        document.getElementById('settingsPage').removeAttribute('style');
+        document.getElementById('main').style.display = 'none';
     });
     document.querySelector('#settingsPage button').addEventListener('click', (e) => {
-        document.getElementById('main').classList.remove('hidden');
-        document.getElementById('settingsPage').classList.add('hidden');
+        document.getElementById('main').removeAttribute('style');
+        document.getElementById('settingsPage').style.display = 'none';
     });
-    document.getElementById('hostName').addEventListener('input', (e) => {
-        api_address = e.target.value;
-        window.localStorage.setItem('api_address', api_address);
-    });
-    document.getElementById('hostName').value = api_address;
 
     loadModels();
 });
 
-function loadModels(models) {
+function loadModels() {
     getModels().then((models) => {
         for (const model of models) {
             const option = document.createElement('option');
@@ -146,7 +181,7 @@ function saveChat() {
             if (!id) displayChatHistory(id);
         });
         transaction.addEventListener('error', () => alert("Unable to save chat"));
-    } else alert("No chat to save!");
+    }
 }
 
 function createChatBubble(user) {
@@ -183,6 +218,7 @@ function loadChat(button) {
             bubble.textContent = message;
             ++i;
         }
+        chat.lastElementChild.scrollIntoView({behavior: 'instant', block: 'end'});
     });
 }
 
@@ -217,7 +253,7 @@ function createChatHistoryEntry(title, id) {
 }
 
 async function getModels() {
-    return (await (await fetch(`${api_address}/api/tags`)).json())['models'];
+    return (await (await fetch(`${api_address.value}/api/tags`)).json())['models'];
 }
 
 async function postMessage() {
@@ -225,6 +261,7 @@ async function postMessage() {
     if (prompt.length > 0) {
         const output = createChatBubble(false);
         input.value = '';
+        input.dispatchEvent(new Event('input'));
         input.disabled = true;
         sendButton.textContent = 'Stop Responding';
         const controller = new AbortController();
@@ -237,17 +274,23 @@ async function postMessage() {
             responding = true;
             sendButton.addEventListener('click', cancelButtonCallback, {once: true});
 
-            const response = await fetch(`${api_address}/api/generate`, {
+            const body = {
+                model: modelSelect.value,
+                prompt: prompt,
+                context: currentContext,
+                options: {}
+            }
+
+            if (context_length.value != null) body.options.num_ctx = parseInt(context_length.value);
+            if (temperature.value != null) body.options.temperature = parseInt(temperature.value);
+            if (system_prompt.value != null) body.system = system_prompt.value;
+
+            const response = await fetch(`${api_address.value}/api/generate`, {
                 method: 'POST',
                 headers: {
                     'content-type': 'application/json',
                 },
-                body: JSON.stringify({
-                    model: modelSelect.value,
-                    prompt: prompt,
-                    context: currentContext
-                    // TODO: add options, such as context size, default prompt
-                }),
+                body: JSON.stringify(body),
                 signal: controller.signal
             });
 
@@ -259,9 +302,11 @@ async function postMessage() {
             while (true) {
                 const {value, done} = await reader.read();
                 if (done) break;
-                chunk = JSON.parse(decoder.decode(value, {stream: true}));
-                output.textContent += chunk.response;
-                output.scrollIntoView({behavior: 'smooth', block: 'end'});
+                try {
+                    chunk = JSON.parse(decoder.decode(value, {stream: true}));
+                    output.textContent += chunk.response;
+                    output.scrollIntoView({behavior: 'smooth', block: 'end'});
+                } catch (e) {console.error(e);}
             }
             if (chunk.context != null) currentContext = chunk.context;
         } finally {

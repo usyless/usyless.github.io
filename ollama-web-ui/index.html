@@ -12,13 +12,25 @@
     <link rel="stylesheet" href="ollama.css">
 </head>
 <body>
-    <div id="settingsPage" class="hidden">
+    <div id="settingsPage" style="display: none;">
         <div>
             <button>Return to web ui</button>
         </div>
         <div>
-            <label for="hostName">Custom Hostname: </label>
-            <input type="text" id="hostName" value="http://localhost:11434">
+            <label for="api_address">Custom Hostname: (Blank for default)</label>
+            <input type="text" id="api_address">
+        </div>
+        <div>
+            <label for="context_length">Max Context Length: (Blank for default)</label>
+            <input type="number" id="context_length">
+        </div>
+        <div>
+            <label for="temperature">Temperature: (Blank for default)</label>
+            <input type="number" id="temperature">
+        </div>
+        <div>
+            <label for="system_prompt">System Prompt: (Blank for default)</label>
+            <textarea id="system_prompt"></textarea>
         </div>
     </div>
     <div id="main">
@@ -36,8 +48,11 @@
             </button>
             <hr>
             <div id="chatHistory">
+                <div>
 
+                </div>
             </div>
+            <hr>
             <button id="deleteChat">
                 Delete Chat
             </button>
@@ -49,7 +64,7 @@
                 </div>
                 <div id="chatBox">
                     <div>
-                        <textarea placeholder="Send a message." rows="1"></textarea>
+                        <textarea placeholder="Send a message." rows="1" id="input"></textarea>
                         <button id="sendChatButton">Send</button>
                     </div>
                 </div>
