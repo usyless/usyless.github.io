@@ -223,12 +223,12 @@ function loadChat(button) {
 }
 
 function displayChatHistory(reselect_id) {
-    chatHistory.innerHTML = '';
     const transaction = db.transaction('chat_history');
     transaction.objectStore('chat_history').openCursor().addEventListener('success', (e) => {
         const cursor = e.target.result;
         if (cursor) {
-            const button = createChatHistoryEntry(cursor.value.title, cursor.value.id);
+            let button = document.querySelector(`button[data-id="${cursor.value.id}"]`);
+            if (button == null) button = createChatHistoryEntry(cursor.value.title, cursor.value.id);
             if (cursor.value.id === reselect_id) button.classList.add('selected');
             cursor.continue();
         } else {
