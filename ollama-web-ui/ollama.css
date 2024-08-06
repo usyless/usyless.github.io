@@ -226,7 +226,7 @@ hr {
     word-break: break-word;
 }
 
-#chat h3, #chat h2, #chat h1 {
+#chat h6, #chat h5, #chat h4, #chat h3, #chat h2, #chat h1 {
     margin: var(--smaller-spacing) 0;
 }
 

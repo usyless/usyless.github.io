@@ -36,7 +36,7 @@ for (let setting of [api_address, context_length, system_prompt, temperature, en
             setting.value = e.target.checked;
             window.localStorage.setItem(setting.id, e.target.checked);
             const s = document.querySelector('.selected');
-            if (s != null) loadChat(s);
+            if (s != null) document.querySelector('#settingsPage button').addEventListener('click', () => loadChat(s), { once: true });
         });
     } else {
         elem.addEventListener('input', (e) => {
