@@ -53,28 +53,12 @@ body {
 }
 
 #sidebar button {
-    background-color: var(--tertiary);
-    border: none;
-    box-sizing: border-box;
-    transition: 50ms ease-in-out;
-    cursor: pointer;
-    border-radius: var(--radius);
-    font-size: 16px;
-    padding: var(--padding);
     word-wrap: break-word;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 200px;
     min-height: 35px;
-}
-
-#sidebar button:hover {
-    background-color: var(--quaternary);
-}
-
-#sidebar button:active {
-    background-color: var(--secondary);
 }
 
 #chatHistory {
@@ -214,7 +198,7 @@ body {
     row-gap: var(--spacing);
 }
 
-#settingsPage input, #settingsPage button, #settingsPage textarea {
+#settingsPage input, #settingsPage textarea {
     background-color: var(--primary);
 }
 
@@ -227,12 +211,12 @@ hr {
     display: flex;
 }
 
-.chatSegment {
+#chat .chatSegment {
     width: 100%;
 }
 
-.chatBubble {
-    background-color: var(--tertiary);
+#chat .chatBubble {
+    background-color: var(--secondary);
     border: none;
     border-radius: var(--radius);
     max-width: 80%;
@@ -242,15 +226,76 @@ hr {
     word-break: break-word;
 }
 
-.userBubble {
+#chat h3, #chat h2, #chat h1 {
+    margin: var(--smaller-spacing) 0;
+}
+
+#chat pre {
+    padding: var(--padding-larger);
+    background-color: var(--primary);
+    border-radius: var(--radius-larger);
+    box-sizing: border-box;
+    margin: 0;
+}
+
+#chat pre code {
+    background-color: transparent;
+}
+
+#chat code {
+    white-space: pre-wrap;
+    word-break: break-word;
+    background-color: var(--secondary);
+    box-sizing: border-box;
+    border-radius: var(--radius);
+}
+
+#chat .codeBlockLanguageOuter {
+    background-color: var(--secondary);
+    border-radius: var(--radius-larger);
+    margin: var(--smaller-spacing) 0;
+}
+
+#chat .codeBlockLanguage {
+    box-sizing: border-box;
+    padding: var(--padding) var(--padding-larger);
+    display: flex;
+    justify-content: space-between;
+}
+
+#chat .languageDiv {
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+#chat .userBubble {
     float: right;
 }
 
-.responseBubble {
-    background-color: var(--quaternary);
+#chat .responseBubble {
+    background-color: var(--tertiary);
     float: left;
 }
 
 #chatHistory button.selected {
     border: 3px solid var(--quaternary);
+}
+
+.standardButton {
+    background-color: var(--tertiary);
+    border: none;
+    box-sizing: border-box;
+    transition: 50ms ease-in-out;
+    cursor: pointer;
+    border-radius: var(--radius);
+    font-size: 16px;
+    padding: var(--padding);
+}
+
+.standardButton:hover {
+    background-color: var(--quaternary);
+}
+
+.standardButton:active {
+    background-color: var(--secondary);
 }

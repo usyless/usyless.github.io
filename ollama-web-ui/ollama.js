@@ -17,23 +17,39 @@ let api_address = {
         value: null,
         default_value: null,
         id: 'temperature',
+    },
+    enable_markdown = {
+        value: null,
+        default_value: true,
+        id: 'enable_markdown',
     };
 
-for (let setting of [api_address, context_length, system_prompt, temperature]) {
+for (let setting of [api_address, context_length, system_prompt, temperature, enable_markdown]) {
     const elem = document.getElementById(setting.id);
     setting.value = window.localStorage.getItem(setting.id) || setting.default_value;
     if (setting.value !== setting.default_value) elem.value = setting.value;
 
-    elem.addEventListener('input', (e) => {
-        const newValue = e.target.value;
-        if (newValue !== setting.default_value && newValue.length > 0) {
-            window.localStorage.setItem(setting.id, newValue);
-            setting.value = newValue;
-        } else {
-            window.localStorage.removeItem(setting.id);
-            setting.value = setting.default_value;
-        }
-    });
+    if (elem.type === 'checkbox') {
+        setting.value = setting.value !== 'false'
+        elem.checked = setting.value;
+        elem.addEventListener('change', (e) => {
+            setting.value = e.target.checked;
+            window.localStorage.setItem(setting.id, e.target.checked);
+            const s = document.querySelector('.selected');
+            if (s != null) loadChat(s);
+        });
+    } else {
+        elem.addEventListener('input', (e) => {
+            const newValue = e.target.value;
+            if (newValue !== setting.default_value && newValue.length > 0) {
+                window.localStorage.setItem(setting.id, newValue);
+                setting.value = newValue;
+            } else {
+                window.localStorage.removeItem(setting.id);
+                setting.value = setting.default_value;
+            }
+        });
+    }
 }
 
 const modelSelect = document.getElementById('modelSelect');
@@ -126,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sendButton.textContent = 'Send';
         input.focus();
     });
-    document.getElementById('deleteChat').addEventListener('click', (e) => {
+    document.getElementById('deleteChat').addEventListener('click', () => {
         const id = chat.getAttribute('data-id');
         if (id != null) {
             const transaction = db.transaction(['chat_history'], "readwrite");
@@ -142,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('settingsPage').removeAttribute('style');
         document.getElementById('main').style.display = 'none';
     });
-    document.querySelector('#settingsPage button').addEventListener('click', (e) => {
+    document.querySelector('#settingsPage button').addEventListener('click', () => {
         document.getElementById('main').removeAttribute('style');
         document.getElementById('settingsPage').style.display = 'none';
     });
@@ -179,7 +195,7 @@ function saveChat() {
         const chatInfo = {
             title: messages[0].textContent,
             context: currentContext,
-            messages: Array.from(chat.children).map((el) => el.textContent)
+            messages: Array.from(chat.children).map((el) => el.firstElementChild.getAttribute('original'))
         }
         let id = chat.getAttribute('data-id');
         const transaction = db.transaction(['chat_history'], "readwrite");
@@ -204,17 +220,17 @@ function saveChat() {
     }
 }
 
-function createChatBubble(user) {
+function createChatBubble(user, no_default_text) {
     const segment = document.createElement('div');
     const bubble = document.createElement('div');
     bubble.classList.add('chatBubble');
+    bubble.setAttribute('original', '');
     if (user) {
         bubble.classList.add('userBubble');
-        bubble.textContent = input.value;
-    }
-    else {
+        if (!no_default_text) setChatBubbleText(bubble, input.value);
+    } else {
         bubble.classList.add('responseBubble');
-        bubble.textContent = 'Generating response...';
+        if (!no_default_text) setChatBubbleText(bubble, 'Generating response...');
     }
     segment.classList.add('chatSegment');
     segment.appendChild(bubble);
@@ -236,8 +252,14 @@ function loadChat(button) {
         chatWith.textContent = currentModel;
         let i = 0;
         for (const message of result.messages) {
-            const bubble = i % 2 === 0 ? createChatBubble(true) : createChatBubble(false);
-            bubble.textContent = message;
+            if (i % 2 === 0) {
+                const bubble = createChatBubble(true);
+                setChatBubbleText(bubble, message);
+            } else {
+                const bubble = createChatBubble(false, true);
+                bubble.setAttribute('original', message);
+                formatBubble(bubble);
+            }
             ++i;
         }
         chat.lastElementChild.scrollIntoView({behavior: 'instant', block: 'end'});
@@ -269,6 +291,7 @@ function displayChatHistory(reselect_id) {
 function createChatHistoryEntry(title, id) {
     const button = document.createElement('button');
     button.textContent = title;
+    button.classList.add('standardButton');
     button.setAttribute('data-id', id);
     button.addEventListener('click', () => loadChat(button));
     chatHistory.appendChild(button);
@@ -320,7 +343,7 @@ async function postMessage() {
             const decoder = new TextDecoder();
             output.textContent = '';
             let chunk;
-
+            setChatBubbleText(output, '');
             while (true) {
                 const {value, done} = await reader.read();
                 if (done) break;
@@ -329,8 +352,8 @@ async function postMessage() {
                     line = line.trim();
                     if (line.length > 0) {
                         line = JSON.parse(line);
-                        output.textContent += line.response;
-                        output.scrollIntoView({behavior: 'smooth', block: 'end'});
+                        output.setAttribute('original', output.getAttribute('original') + line.response);
+                        formatBubble(output);
                         if (line.context != null) currentContext = line.context;
                     }
                 }
@@ -344,4 +367,16 @@ async function postMessage() {
             input.focus();
         }
     }
+}
+
+function setChatBubbleText(bubble, text) {
+    bubble.textContent = text;
+    bubble.setAttribute('original', text);
+}
+
+function formatBubble(bubble) {
+    bubble.innerHTML = '';
+    if (enable_markdown.value) bubble.append(...TextFormatter.getFormatted(bubble.getAttribute('original')));
+    else bubble.textContent = bubble.getAttribute('original');
+    bubble.scrollIntoView({behavior: 'smooth', block: 'end'});
 }

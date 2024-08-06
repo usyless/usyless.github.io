@@ -12,11 +12,12 @@
     <link rel="shortcut icon" type="image/x-icon" href="https://usyless.uk/assets/ollama-webui.ico">
     <meta name="keywords" content="usy, ollama, ollama web ui, llm, local llm">
     <link rel="stylesheet" href="ollama.css">
+    <script src="SafeTextFormatter.js"></script>
 </head>
 <body>
     <div id="settingsPage" style="display: none;">
         <div>
-            <button>Return to web ui</button>
+            <button class="standardButton">Return to web ui</button>
         </div>
         <div>
             <label for="api_address">Custom Hostname: (Blank for default)</label>
@@ -34,6 +35,10 @@
             <label for="system_prompt">System Prompt: (Blank for default)</label>
             <textarea id="system_prompt"></textarea>
         </div>
+        <div>
+            <label for="enable_markdown">Enable Response Markdown and Code blocks: </label>
+            <input id="enable_markdown" type="checkbox">
+        </div>
     </div>
     <div id="main">
         <div id="sidebar">
@@ -41,11 +46,11 @@
             <div class="flex">
                 <select id="modelSelect"></select>
             </div>
-            <button id="settings">
+            <button id="settings" class="standardButton">
                 Settings
             </button>
             <hr>
-            <button id="newChatButton">
+            <button id="newChatButton" class="standardButton">
                 New Chat
             </button>
             <hr>
@@ -55,7 +60,7 @@
                 </div>
             </div>
             <hr>
-            <button id="deleteChat">
+            <button id="deleteChat" class="standardButton">
                 Delete Chat
             </button>
         </div>
