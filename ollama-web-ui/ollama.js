@@ -260,7 +260,7 @@
             bubble.innerHTML = '';
             if (enable_markdown.value) bubble.append(...TextFormatter.getFormatted(t));
             else bubble.textContent = t;
-            bubble.scrollIntoView({behavior: 'smooth', block: 'end'});
+            segment.scrollIntoView({behavior: 'smooth', block: 'end'});
         }
         if (user) {
             bubble.classList.add('userBubble');
