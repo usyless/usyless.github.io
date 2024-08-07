@@ -102,13 +102,22 @@
         [big_code_block, h6_regex, h5_regex, h4_regex, h3_regex, h2_regex, h1_regex, bold_regex, italic_regex, small_code_block]
     );
 
-    // Return the text as an array of nodes to insert into an element
+    /**
+     * Return text as an array of Text and HTMLElement's that can be appended to another HTML element.
+     * Formatting has issues, but is guaranteed to be safe by only adding to textContent and creating text nodes
+     * @param text Text to be formatted
+     * @returns {[HTMLElement || Text]}
+     */
     function getFormatted(text) {
         output = [];
         iterator(text);
         return output;
     }
 
+    /**
+     * Parent object for the text formatter, which binds to the window
+     * @type {{getFormatted: (function(string): [HTMLElement || Text])}}
+     */
     window.TextFormatter = {
         getFormatted: getFormatted,
     };
