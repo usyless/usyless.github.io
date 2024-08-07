@@ -267,7 +267,6 @@
             bubble.classList.add('responseBubble');
             if (!no_default_text) bubble.setVisibleText('Generating response...');
         }
-        bubble.setUnformattedText('');
         segment.scrollIntoView({behavior: 'smooth', block: 'end'});
         return bubble;
     }
