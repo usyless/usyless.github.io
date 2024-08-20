@@ -1,7 +1,7 @@
 'use strict';
 
 { // version stuff
-    const VERSION = 7;
+    const VERSION = 8;
     window.history.pushState({}, '', window.location.href.split('?')[0]);
     fetch('https://usyless.pythonanywhere.com/api/version', {cache: 'no-store'})
         .then((r) => r.json())
@@ -387,7 +387,7 @@ function updateSizeRatio() {
 
 function createWorker() {
     if (!worker) {
-        worker = new Worker("./worker-1721854840.js");
+        worker = new Worker("./worker-1724175695.js");
         worker.onmessage = (e) => {
             const d = e.data, imgData = imageMap.get(d.src);
 
@@ -450,16 +450,20 @@ function createSVGText(text, x, y) {
     t.setAttribute('x', x);
     t.setAttribute('y', y);
     t.setAttribute('font-size', `${1.3 * sizeRatio}em`);
+    t.setAttribute('text-anchor', 'middle');
     return t;
 }
 
 function moveLine(line) {
-    const l = lineSVG.querySelector(`line[dir="${line.dir}"][type="${line.type}"]`);
+    const other = lineSVG.querySelector(`line[dir="${line.dir}"]:not([type="${line.type}"])`),
+        l = lineSVG.querySelector(`line[dir="${line.dir}"][type="${line.type}"]`);
     if (line.dir === 'x') {
-        line.pos = Math.floor(Math.max(1, Math.min(width - 1, line.pos)));
+        if (line.type === 'High') line.pos = Math.ceil(Math.max(parseInt(other.getAttribute('x1')) + 1, Math.min(width - 1, line.pos)));
+        else line.pos = Math.floor(Math.max(1, Math.min(parseInt(other.getAttribute('x1')) - 1, line.pos)));
         updateLine(l, line, line.pos, '0', line.pos, height);
     } else {
-        line.pos = Math.floor(Math.max(1, Math.min(height - 1, line.pos)));
+        if (line.type === 'High') line.pos = Math.floor(Math.max(1, Math.min(parseInt(other.getAttribute('y1')) - 1, line.pos)));
+        else line.pos = Math.ceil(Math.max(parseInt(other.getAttribute('y1')) + 1, Math.min(height - 1, line.pos)));
         updateLine(l, line, '0', line.pos, width, line.pos);
     }
 }
@@ -488,27 +492,22 @@ function createLines() {
 
     { // Move canvas lines with mouse
         let selectedLine = null, offset = 0;
-        const sizes = {
-            x: width,
-            y: height
-        }
 
         multiEventListener('mousedown', lineSVG, (e) => {
             const m = getMouseCoords(e);
-
-            for (const line of lines) {
-                offset = m[`${line.dir}Rel`] * sizeRatio - line.pos;
-                if (Math.abs(offset) < sizes[line.dir] * 0.02) {
-                    selectedLine = line;
-                    return;
-                }
+            const sizes = {
+                x: width * 0.02,
+                y: height * 0.02
             }
+            for (const line of lines) line.offset = m[`${line.dir}Rel`] * sizeRatio - line.pos;
+            const closest = lines.reduce((acc, curr) => Math.abs(curr.offset) < Math.abs(acc.offset) ? curr : acc, lines[0]);
+            if (Math.abs(closest.offset) < sizes[closest.dir]) selectedLine = closest;
         });
 
         multiEventListener('mousemove', lineSVG, (e) => {
             if (selectedLine) {
                 const m = getMouseCoords(e);
-                selectedLine.pos = Math.floor(m[`${selectedLine.dir}Rel`] * sizeRatio - offset);
+                selectedLine.pos = Math.floor(m[`${selectedLine.dir}Rel`] * sizeRatio - selectedLine.offset);
                 moveLine(selectedLine);
             }
         });
@@ -524,9 +523,12 @@ function createLines() {
         if (line.dir === "x") {
             l = createSVGLine(line.pos, "0", line.pos, height, 'green', sizeRatio);
             t = createSVGText(line.type, line.pos, height / 2);
+            if (line.type === 'High') t.setAttribute("dx", "1em");
+            else t.setAttribute("dx", "-1em");
         } else {
             l = createSVGLine("0", line.pos, width, line.pos, 'blue', sizeRatio);
             t = createSVGText(line.type, width / 2, line.pos);
+            if (line.type !== 'High') t.setAttribute("dy", "0.6em");
         }
         l.setAttribute("dir", line.dir);
         l.setAttribute("type", line.type);
