@@ -33,7 +33,7 @@ const imageMap = new Map(),
     glass = document.getElementById('glass'),
     state = State(),
     defaults = {
-        "FRTop": 34252345,
+        "FRTop": 20000,
         "FRBot": 20,
 
         "colourTolerance": 67,
