@@ -1,4 +1,4 @@
-const cacheName = 'v3';
+const cacheName = 'v4';
 
 contentToCache = [
     'favicon.ico',
@@ -6,7 +6,8 @@ contentToCache = [
     'trace.js',
     'trace.css',
     'worker.js',
-    'a.out.wasm'
+    'a.out.wasm',
+    'usytrace.webmanifest'
 ]
 
 self.addEventListener('install', (e) => {
