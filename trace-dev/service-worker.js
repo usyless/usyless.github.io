@@ -2,18 +2,13 @@ const cacheName = 'v9';
 
 contentToCache = [
     'favicon.ico',
-
     'index.html',
-
     'popup.css',
     'shared.css',
     'main.css',
-
     'worker.js',
     'main.js',
-    'updater.js',
     'popups.js',
-
     'a.out.wasm',
     'usytrace.webmanifest'
 ]
