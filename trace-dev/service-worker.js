@@ -1,11 +1,11 @@
-const cacheName = 'v8';
+const cacheName = 'v9';
 
 contentToCache = [
     'favicon.ico',
 
     'index.html',
 
-    'popups.css',
+    'popup.css',
     'shared.css',
     'main.css',
 
