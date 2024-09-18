@@ -455,6 +455,7 @@ document.getElementById('fileInputButton').addEventListener('click', () => fileI
     let selectedLine = null, getCoords = image.getMouseCoords;
 
     lines.parent.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
         const m = getCoords(e);
         const sizes = {
             x: width * 0.02,
