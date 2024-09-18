@@ -26,7 +26,7 @@ function resetToDefault() {
 }
 
 // Global Variables
-let sizeRatio, width, height, CURRENT_MODE = null;
+let sizeRatio, width, height, lineWidth, CURRENT_MODE = null;
 
 const glass = document.getElementById('glass');
 glass.setColour = (colour) => {
@@ -141,7 +141,7 @@ const worker = {
             } else if (data.src === image.src) {
                 if (data.type === 'getPixelColour') glass.setColour(data.pixelColour);
                 else if (data.type === 'snapLine') lines.setPosition(lines.lines[data.line.name], data.line.position);
-                else graphs.setTracePath(data.svg, data.colour, height * 0.005);
+                else graphs.setTracePath(data.svg, data.colour);
             }
         }
         return worker;
@@ -210,11 +210,8 @@ const worker = {
                 bottomPixel: lines.getPosition(lines.lines.xLow),
             }
         }
-        if (hasNullOrEmpty(data)) {
-            Popups.createPopup("Please fill in all required values to export (SPL and FR values)");
-            return;
-        }
-        worker.worker.postMessage(data);
+        if (hasNullOrEmpty(data)) Popups.createPopup("Please fill in all required values to export (SPL and FR values)");
+        else worker.worker.postMessage(data);
     },
     addPoint: (x, y) => {
         worker.worker.postMessage({
@@ -238,7 +235,10 @@ const worker = {
             type: 'trace',
             src: image.src,
             x: x,
-            y: y
+            y: y,
+            maxLineHeightOffset: preferences.maxLineHeightOffset(),
+            maxJumpOffset: preferences.largestContiguousJumpOffset(),
+            colourTolerance: preferences.colourTolerance()
         });
     },
     snapLine: (line, direction) => {
@@ -271,11 +271,13 @@ const graphs = {
             e.setAttribute("viewBox", `0 0 ${width} ${height}`);
         });
     },
-    setTracePath: (d, colour, width) => {
-        const path = document.getElementById('trace').firstElementChild;
+    setTracePath: (d, colour) => {
+        const trace = document.getElementById('trace'), path = trace.lastElementChild, path2 = trace.firstElementChild;
         path.setAttribute('d', d);
         path.setAttribute('stroke', colour);
-        path.setAttribute('stroke-width', width);
+        path.setAttribute('stroke-width', lineWidth);
+        path2.setAttribute('d', d);
+        path2.setAttribute('stroke-width', lineWidth * 1.5);
     },
     clearTracePath: () => {
         graphs.setTracePath('', '#ff0000', 0);
@@ -523,11 +525,9 @@ image.addEventListener('load', () => {
     document.getElementById('defaultMainText').classList.add('hidden');
     buttons.enableButtons();
     buttons.resetButtons();
-    width = image.naturalWidth;
-    height = image.naturalHeight;
+    updateSizes();
     graphs.updateSize();
     graphs.clearTracePath();
-    updateSizeRatio();
 
     const imageData = imageMap.get(image.src);
     if (imageData.initial) {
@@ -547,7 +547,7 @@ image.addEventListener('load', () => {
         imageData.initial = false;
     } else {
         image.loadLines();
-        graphs.setTracePath(imageData.path, imageData.colour, height * 0.005);
+        graphs.setTracePath(imageData.path, imageData.colour);
     }
     lines.updateLineWidth();
 });
@@ -565,6 +565,13 @@ function initAll() {
     graphs.clearTracePath();
     buttons.resetButtons();
     image.src = ''
+}
+
+function updateSizes() {
+    width = image.naturalWidth;
+    height = image.naturalHeight;
+    lineWidth = Math.max(width, height) * 0.003;
+    updateSizeRatio();
 }
 
 function updateSizeRatio() {
