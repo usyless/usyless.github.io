@@ -199,3 +199,7 @@ input[type="number"]:focus, select:focus {
     max-height: 100%;
     cursor: pointer;
 }
+
+#lines {
+    touch-action: none;
+}
