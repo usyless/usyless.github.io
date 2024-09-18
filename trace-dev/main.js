@@ -466,6 +466,7 @@ document.getElementById('fileInputButton').addEventListener('click', () => fileI
     });
 
     lines.parent.addEventListener('pointermove', (e) => {
+        e.preventDefault();
         if (selectedLine) lines.setPosition(selectedLine, getCoords(e)[`${selectedLine.dataset.direction}Rel`] * sizeRatio - selectedLine.offset);
     });
 
