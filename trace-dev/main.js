@@ -464,17 +464,17 @@ document.getElementById('fileInputButton').addEventListener('click', () => fileI
         for (const line of lines.lineArray) line.offset = m[`${line.dataset.direction}Rel`] * sizeRatio - lines.getPosition(line);
         const closest = lines.lineArray.reduce((acc, curr) => Math.abs(curr.offset) < Math.abs(acc.offset) ? curr : acc, lines.lineArray[0]);
         if (Math.abs(closest.offset) < sizes[closest.dataset.direction]) selectedLine = closest;
-    });
+    }, { passive: false});
 
     lines.parent.addEventListener('pointermove', (e) => {
         e.preventDefault();
         if (selectedLine) lines.setPosition(selectedLine, getCoords(e)[`${selectedLine.dataset.direction}Rel`] * sizeRatio - selectedLine.offset);
-    });
+    }, { passive: false});
 
     multiEventListener(['pointerup', 'pointerleave', 'pointercancel'], lines.parent, (e) => {
         e.preventDefault();
         selectedLine = null;
-    });
+    }, { passive: false});
 }
 
 { // Move canvas lines with buttons
