@@ -99,6 +99,8 @@ image.loadLines = () => {
     lines.initialise();
     lines.showLines();
 }
+image.stopPointerEvents = () => image.classList.add('removePointerEvents');
+image.startPointerEvents = () => image.classList.remove('removePointerEvents');
 
 const preferences = {
     SPLHigher: () => document.getElementById('SPLHigher').value,
@@ -352,6 +354,7 @@ const imageQueue = {
             e.preventDefault();
             e.stopPropagation();
             image.saveLines();
+            image.stopPointerEvents();
             image.src = src;
             imageQueue.removeSelectedImage();
             img.classList.add('selectedImage');
@@ -550,6 +553,7 @@ image.addEventListener('load', () => {
         graphs.setTracePath(imageData.path, imageData.colour);
     }
     lines.updateLineWidth();
+    image.startPointerEvents();
 });
 
 // Helper Functions
@@ -582,3 +586,15 @@ function updateSizeRatio() {
 function minVal(e) {
     if (e.value < e.min) e.value = e.min;
 }
+
+console.log('Welcome to the console!')
+console.log('If you want to mess with the javascript in this site, objects of note are:');
+console.log('graphs', graphs);
+console.log('lines', lines);
+console.log('worker', worker);
+console.log('image', image);
+console.log('imageQueue', imageQueue);
+console.log('preferences', preferences);
+console.log('buttons', buttons);
+console.log(`I won't explain what they do, but it should be pretty self explanatory`);
+console.log('If you happen to want to report a bug or add a new feature then you can always contact me with the details on the site!');
