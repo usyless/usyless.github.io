@@ -1,21 +1,11 @@
-const cacheName = 'v6';
+const cacheName = 'v5';
 
 contentToCache = [
     'favicon.ico',
-
     'index.html',
-
-    'popup.css',
-    'shared.css',
-    'main.css',
-    'tutorial.css',
-
+    'trace.js',
+    'trace.css',
     'worker.js',
-    'main.js',
-    'updater.js',
-    'popups.js',
-    'tutorial.js',
-
     'a.out.wasm',
     'usytrace.webmanifest'
 ]

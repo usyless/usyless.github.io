@@ -1,4 +1,4 @@
-const cacheName = 'v17-dev';
+const cacheName = 'v18-dev';
 
 contentToCache = [
     'favicon.ico',
@@ -8,11 +8,13 @@ contentToCache = [
     'popup.css',
     'shared.css',
     'main.css',
+    'tutorial.css',
 
     'worker.js',
     'main.js',
     'updater.js',
     'popups.js',
+    'tutorial.js',
 
     'a.out.wasm',
     'usytrace.webmanifest'
