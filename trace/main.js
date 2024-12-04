@@ -187,6 +187,12 @@ const worker = {
             src: image.src,
         });
     },
+    redoTrace: () => {
+        worker.postMessage({
+            type: 'redoTrace',
+            src: image.src,
+        })
+    },
     exportTrace: () => {
         const hasNullOrEmpty = (obj) => {
             return Object.values(obj).some(value => {
@@ -293,6 +299,7 @@ const graphs = {
 
 document.getElementById('autoPath').addEventListener('click', worker.autoTrace);
 document.getElementById('undo').addEventListener('click', worker.undoTrace);
+document.getElementById('redo').addEventListener('click', worker.redoTrace);
 document.getElementById('clearPath').addEventListener('click', graphs.clearTracePathAndWorker);
 document.getElementById('export').addEventListener('click', worker.exportTrace);
 
@@ -563,7 +570,7 @@ image.addEventListener('load', () => {
     const pointerDown = new PointerEvent('pointerdown', {bubbles: true}), pointerUp = new PointerEvent('pointerup', {bubbles: true});
     const keydownMap = {
         'escape': Popups.clearPopups,
-        'z': (e) => e.ctrlKey && document.getElementById('undo').click(),
+        'z': (e) => e.ctrlKey && document.getElementById(e.shiftKey ? 'redo' : 'undo').click(),
         'a': () => document.getElementById('autoPath').click(),
         't': () => document.getElementById('selectPath').click(),
         'p': () => document.getElementById('selectPoint').click(),
@@ -584,14 +591,14 @@ image.addEventListener('load', () => {
     };
     document.addEventListener('keydown', (e) => {
         const cb = keydownMap[e.key.toLowerCase()];
-        if (cb) {
+        if (!e.target.closest('input') && cb) {
             e.preventDefault();
             cb(e);
         }
     });
     document.addEventListener('keyup', (e) => {
         const cb = keyupMap[e.key.toLowerCase()];
-        if (cb) {
+        if (!e.target.closest('input') && cb) {
             e.preventDefault();
             cb(e);
         }
