@@ -125,7 +125,7 @@ const preferences = {
 
 const worker = {
     worker: (() => {
-        let worker = new Worker("./worker.js");
+        const worker = new Worker("./worker.js");
         worker.onmessage = (e) => {
             const data = e.data, imgData = imageMap.get(data.src);
 
@@ -151,8 +151,9 @@ const worker = {
         }
         return worker;
     })(),
+    postMessage: (data) => image.src.startsWith('blob:') && worker.worker.postMessage(data),
     removeImage: (src) => {
-        worker.worker.postMessage({
+        worker.postMessage({
             type: 'removeImage',
             src: src
         });
@@ -166,7 +167,7 @@ const worker = {
         new_image.src = image.src;
         processing_context.drawImage(new_image, 0, 0);
         const imageData = processing_context.getImageData(0, 0, width, height);
-        worker.worker.postMessage({
+        worker.postMessage({
             src: image.src,
             type: 'setData',
             data: imageData.data,
@@ -175,13 +176,13 @@ const worker = {
         }, [imageData.data.buffer]);
     },
     clearTrace: () => {
-        worker.worker.postMessage({
+        worker.postMessage({
             type: 'clearTrace',
             src: image.src,
         });
     },
     undoTrace: () => {
-        worker.worker.postMessage({
+        worker.postMessage({
             type: 'undoTrace',
             src: image.src,
         });
@@ -216,10 +217,10 @@ const worker = {
             }
         }
         if (hasNullOrEmpty(data)) Popups.createPopup("Please fill in all required values to export (SPL and FR values)");
-        else worker.worker.postMessage(data);
+        else worker.postMessage(data);
     },
     addPoint: (x, y) => {
-        worker.worker.postMessage({
+        worker.postMessage({
             type: 'addPoint',
             src: image.src,
             x: x,
@@ -227,14 +228,14 @@ const worker = {
         });
     },
     autoTrace: () => {
-        worker.worker.postMessage({
+        worker.postMessage({
             type: 'autoTrace',
             src: image.src,
             colourTolerance: preferences.colourTolerance(),
         });
     },
     trace: (x, y) => {
-        worker.worker.postMessage({
+        worker.postMessage({
             type: 'trace',
             src: image.src,
             x: x,
@@ -243,7 +244,7 @@ const worker = {
         });
     },
     snapLine: (line, direction) => {
-        worker.worker.postMessage({
+        worker.postMessage({
             type: 'snapLine',
             src: image.src,
             line: {
@@ -255,7 +256,7 @@ const worker = {
         });
     },
     getPixelColour: (x, y) => {
-        worker.worker.postMessage({
+        worker.postMessage({
             type: 'getPixelColour',
             src: image.src,
             x: x,
@@ -390,7 +391,7 @@ const imageQueue = {
         }
     }
 }
-document.getElementById('removeImage').addEventListener('click', () => document.querySelector('img[class="selectedImage"]').dispatchEvent(new Event('contextmenu')));
+document.getElementById('removeImage').addEventListener('click', () => document.querySelector('img[class="selectedImage"]')?.dispatchEvent(new Event('contextmenu')));
 document.getElementById('toggleImageQueue').addEventListener('click', imageQueue.toggle);
 
 // Initialise the page
@@ -485,26 +486,23 @@ document.getElementById('fileInputButton').addEventListener('click', () => fileI
     let holdInterval, line, snap = preferences.snapToLines();
     document.getElementById('snapToLines').addEventListener('change', () => snap = preferences.snapToLines());
 
-    document.querySelectorAll(".moveButtons button").forEach((btn) => {
-        btn.addEventListener('pointerdown', (e) => {
+    document.getElementById('buttonSection').addEventListener('pointerdown', (e) => {
+        const t = e.target, p = t.parentNode;
+        if (!holdInterval && p.classList.contains('moveButtons')) {
             e.preventDefault();
-            line = lines.lines[e.target.parentNode.dataset.for];
+            line = lines.lines[p.dataset.for];
             if (!snap) {
                 holdInterval = setInterval(() => {
-                    lines.setPosition(line, lines.getPosition(line) + parseInt(e.target.dataset.direction) * sizeRatio);
+                    lines.setPosition(line, lines.getPosition(line) + parseInt(t.dataset.direction) * sizeRatio);
                 }, 10);
-            }
-        });
+            } else worker.snapLine(lines.lines[p.dataset.for], parseInt(t.dataset.direction));
+        }
+    });
 
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (snap) worker.snapLine(lines.lines[e.target.parentNode.dataset.for], parseInt(e.target.dataset.direction));
-        });
-
-        multiEventListener(['pointerup', 'pointerleave', 'pointerout', 'pointercancel'], btn, (e) => {
-            e.preventDefault();
-            clearInterval(holdInterval);
-        });
+    multiEventListener(['pointerup', 'pointerleave', 'pointerout', 'pointercancel'], document.getElementById('buttonSection'), (e) => {
+        e.preventDefault();
+        clearInterval(holdInterval);
+        holdInterval = null;
     });
 }
 
@@ -561,6 +559,45 @@ image.addEventListener('load', () => {
     image.startPointerEvents();
 });
 
+{ // keybindings
+    const pointerDown = new PointerEvent('pointerdown', {bubbles: true}), pointerUp = new PointerEvent('pointerup', {bubbles: true});
+    const keydownMap = {
+        'escape': Popups.clearPopups,
+        'z': (e) => e.ctrlKey && document.getElementById('undo').click(),
+        'a': () => document.getElementById('autoPath').click(),
+        't': () => document.getElementById('selectPath').click(),
+        'p': () => document.getElementById('selectPoint').click(),
+        'h': () => document.getElementById('toggleImageQueue').click(),
+        'enter': () => document.getElementById('fileInputButton').click(),
+        'delete': () => document.getElementById('removeImage').click(),
+        'backspace': () => document.getElementById('clearPath').click(),
+        'arrowup': (e) => document.querySelector(`[data-for="y${e.shiftKey ? 'Low' : 'High'}"] > [data-direction="-1"]`).dispatchEvent(pointerDown),
+        'arrowdown': (e) => document.querySelector(`[data-for="y${e.shiftKey ? 'Low' : 'High'}"] > [data-direction="1"]`).dispatchEvent(pointerDown),
+        'arrowleft': (e) => document.querySelector(`[data-for="x${e.shiftKey ? 'Low' : 'High'}"] > [data-direction="-1"]`).dispatchEvent(pointerDown),
+        'arrowright': (e) => document.querySelector(`[data-for="x${e.shiftKey ? 'Low' : 'High'}"] > [data-direction="1"]`).dispatchEvent(pointerDown),
+    };
+    const keyupMap = {
+        'arrowup': (e) => document.querySelector(`[data-for="y${e.shiftKey ? 'Low' : 'High'}"] > [data-direction="-1"]`).dispatchEvent(pointerUp),
+        'arrowdown': (e) => document.querySelector(`[data-for="y${e.shiftKey ? 'Low' : 'High'}"] > [data-direction="1"]`).dispatchEvent(pointerUp),
+        'arrowleft': (e) => document.querySelector(`[data-for="x${e.shiftKey ? 'Low' : 'High'}"] > [data-direction="-1"]`).dispatchEvent(pointerUp),
+        'arrowright': (e) => document.querySelector(`[data-for="x${e.shiftKey ? 'Low' : 'High'}"] > [data-direction="1"]`).dispatchEvent(pointerUp),
+    };
+    document.addEventListener('keydown', (e) => {
+        const cb = keydownMap[e.key.toLowerCase()];
+        if (cb) {
+            e.preventDefault();
+            cb(e);
+        }
+    });
+    document.addEventListener('keyup', (e) => {
+        const cb = keyupMap[e.key.toLowerCase()];
+        if (cb) {
+            e.preventDefault();
+            cb(e);
+        }
+    });
+}
+
 // Helper Functions
 function multiEventListener(events, target, callback) {
     if (typeof (events) !== "object") events = [events];
@@ -592,7 +629,7 @@ function minVal(e) {
     if (e.value < e.min) e.value = e.min;
 }
 
-console.log('Welcome to the console!')
+console.groupCollapsed('Hi! Welcome to UsyTrace, expend this for some info on the inner workings');
 console.log('If you want to mess with the javascript in this site, objects of note are:');
 console.log('graphs', graphs);
 console.log('lines', lines);
@@ -603,3 +640,4 @@ console.log('preferences', preferences);
 console.log('buttons', buttons);
 console.log(`I won't explain what they do, but it should be pretty self explanatory`);
 console.log('If you happen to want to report a bug or add a new feature then you can always contact me with the details on the site!');
+console.groupEnd();
