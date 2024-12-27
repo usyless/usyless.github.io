@@ -1,4 +1,4 @@
-const cacheName = 'v12';
+const cacheName = 'v13';
 
 contentToCache = [
     'favicon.ico',
@@ -17,6 +17,7 @@ contentToCache = [
     'tutorial.js',
 
     'a.out.wasm',
+    'a.out.js',
     'usytrace.webmanifest'
 ]
 
