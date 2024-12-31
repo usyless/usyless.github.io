@@ -9,12 +9,12 @@
     <meta property="og:url" content="https://usyless.uk/trace">
     <meta property="og:description" content="Online Frequency Response Tracing">
     <meta property="og:image" content="https://usyless.uk/assets/usytrace.ico">
-    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico">
     <meta name="keywords" content="usy, frequency response, frequency response trace, frequency response tracing, trace frequency response, trace graph">
-    <link rel="manifest" href="usytrace.webmanifest"/>
-    <link rel="stylesheet" href="main.css">
-    <link rel="stylesheet" href="popup.css">
-    <link rel="stylesheet" href="tutorial.css">
+    <link rel="manifest" href="./usytrace.webmanifest"/>
+    <link rel="stylesheet" href="./main.css">
+    <link rel="stylesheet" href="./popup.css">
+    <link rel="stylesheet" href="./tutorial.css">
 </head>
 <body>
 <div id="main">
@@ -26,21 +26,21 @@
         </div>
     </noscript>
     <div id="sidebar">
-        <h1>UsyTrace</h1>
+        <h1 class="sidebarSection">UsyTrace</h1>
         <button class="sidebarSection standardButton hidden" id="updateAvailable">
             <b>Update Available, click here to update.</b>
         </button>
         <input type='file' id='fileInput' class="hidden" multiple="multiple" accept="image/*"/>
         <button class="standardButton sidebarSection" id="fileInputButton" title="Pick image(s) to trace (Enter)">
-            <b>Choose Images</b>
+            <b>Load from files</b>
         </button>
         <div class="sidebarSection">
             <button id="autoPath" class="standardButton" title="Attempts to trace one of the lines on the image (a)" data-disabled>Auto Trace</button>
             <button id="selectPath" class="standardButton" data-default="Select Path" data-active="Stop Selecting" data-mode="path" title="Click to trace line from a point, will stack on top of previous trace (t)" data-disabled>Select Path</button>
             <button id="selectPoint" class="standardButton" data-default="Add Point" data-active="Stop Adding Points" data-mode="point" title="Click to add a point to the trace, will stack on top of previous trace (p)" data-disabled>Add Point</button>
-            <br>
+            <div class="break"></div>
             <button id="smoothTrace" class="standardButton" title="Apply smoothing to the current trace (s)" data-disabled>Smooth Trace</button>
-            <br>
+            <div class="break"></div>
             <div>
                 <button id="undo" class="standardButton" title="Undo the previous action done to the trace (Ctrl + z)" data-disabled>Undo</button>
                 <button id="redo" class="standardButton" title="Redo the previous actionm done to the trace (Ctrl + Shift + z)" data-disabled>Redo</button>
@@ -151,7 +151,7 @@
                 <svg id="erasing" class="canvasSizing hidden removePointerEvents">
                     <rect x="0" y="0" width="0" height="100%" fill="red" opacity="0.3"></rect>
                 </svg>
-                <h1 id="defaultMainText">Please Load Images (Or drop any images onto the page, or paste with Ctrl+V)</h1>
+                <h1 id="defaultMainText">Please Load Images (Drop onto the page, or paste with Ctrl+V)</h1>
             </div>
         </div>
         <div id="imageQueueContainer">
@@ -167,7 +167,7 @@
 
 </div>
 
-<div id="waiting-overlay"></div>
+<div class="waiting-overlay" data-for="trace"></div>
 <script src="updater.js"></script>
 <script src="popups.js"></script>
 <script src="tutorial.js"></script>
