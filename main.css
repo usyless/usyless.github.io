@@ -1,0 +1,111 @@
+:root {
+    --radius: 20px;
+    --project-width: 400px;
+    --project-aspect-ratio: 1.4/1;
+    --project-hover-expand: 25px;
+    --project-background: #180c3e;
+    --project-spacing: 30px;
+    --project-padding: 30px;
+    --project-line-height: 1em;
+
+    --main-padding: 20px;
+
+    @media (max-width: 480px) {
+        --project-width: 300px;
+        --project-aspect-ratio: 1;
+    }
+}
+
+* {
+    font-family: Arial, sans-serif;
+    box-sizing: border-box;
+    color: #dfdfdf;
+}
+
+body {
+    margin: 0;
+    width: 100vw;
+    background-color: #0a041b;
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: var(--main-padding);
+    row-gap: var(--main-padding);
+}
+
+#fillerText {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+
+    h1 {
+        font-size: 4em;
+    }
+}
+
+#projects {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: var(--project-spacing);
+    column-gap: var(--project-spacing);
+
+    > a {
+        text-decoration: none;
+        color: inherit;
+        font-weight: normal;
+        font-style: normal;
+    }
+
+    .project {
+        width: var(--project-width);
+        aspect-ratio: var(--project-aspect-ratio);
+        position: relative;
+        background-color: var(--project-background);
+        border-radius: var(--radius);
+
+        > div {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: var(--project-width);
+            aspect-ratio: var(--project-aspect-ratio);
+            display: flex;
+            flex-direction: column;
+            padding: var(--project-padding);
+            line-height: var(--project-line-height);
+            text-align: center;
+
+            img {
+                height: 50%;
+            }
+        }
+
+        &::before {
+            content: '';
+            transition: 0.2s ease-in-out;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: inherit;
+            border-radius: inherit;
+            width: var(--project-width);
+            aspect-ratio: var(--project-aspect-ratio);
+            box-shadow: inset 0 0 20px #3a2771;
+        }
+
+        @media (hover: hover) {
+            &:hover::before {
+                width: calc(var(--project-width) + var(--project-hover-expand));
+            }
+        }
+    }
+}
