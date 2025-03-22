@@ -1,4 +1,4 @@
-const cacheName = 'v41';
+const cacheName = 'v42';
 
 contentToCache = [
     './favicon.ico',
@@ -12,7 +12,6 @@ contentToCache = [
     './main.css',
     './tutorial.css',
 
-    './worker.min.js',
     './main.min.js',
 
     './a.out.wasm',
