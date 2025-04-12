@@ -15,6 +15,20 @@
     <meta name="keywords" content="usy, frequency response, frequency response trace, frequency response tracing, trace frequency response, trace graph">
     <link rel="manifest" href="./usytrace.webmanifest"/>
     <link rel="stylesheet" href="./main.min.css">
+    <script>
+        try {
+            // for some reason
+            // document.documentElement.classList.add(`theme-${window.localStorage.getItem('theme') ?? window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'}`);
+            // is broken on firefox
+            let theme = window.localStorage.getItem('theme');
+            if (!theme) {
+                theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            document.documentElement.classList.add(`theme-${theme}`);
+        } catch {
+            document.documentElement.classList.add('theme-dark');
+        }
+    </script>
 </head>
 <body>
 <div id="main">
@@ -155,9 +169,12 @@
         </div>
         <div id="imageQueueContainer">
             <div id="imageQueueBar">
-                <button id="toggleImageQueue" class="standardButton altButton" data-default="Hide" data-active="Show" title="Toggle the image queue bar (h)">Hide</button>
-                <button id="removeImage" class="standardButton altButton" title="Delete the currently selected image (Delete)">Remove</button>
-                <button id="editImage" class="standardButton altButton" title="Edit the currently selected image (Ctrl + e)">Edit</button>
+                <div>
+                    <button id="toggleImageQueue" class="standardButton altButton" data-default="Hide" data-active="Show" title="Toggle the image queue bar (h)">Hide</button>
+                    <button id="removeImage" class="standardButton altButton" title="Delete the currently selected image (Delete)">Remove</button>
+                    <button id="editImage" class="standardButton altButton" title="Edit the currently selected image (Ctrl + e)">Edit</button>
+                </div>
+                <button id="themeSwitch" class="standardButton altButton" title="Change Theme">☀️</button>
             </div>
             <div id="imageQueueOuter">
                 <div id="imageQueueInner"></div>
