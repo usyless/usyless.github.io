@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8mb</title>
+    <meta content="Local video compression" name="description">
+    <meta property="og:title" content="8mb">
+    <meta property="og:description" content="Local video compression">
+    <meta property="og:url" content="https://usyless.uk/8mb/">
+    <link rel="canonical" href="https://usyless.uk/8mb/"/>
+    <meta property="og:image" content="https://usyless.uk/assets/8mb.ico">
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+    <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico">
+    <meta name="keywords" content="usy, 8mb, discord video, video compression, compression, ffmpeg">
+    <link rel="manifest" href="./8mb.webmanifest"/>
+    <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./popup.css">
+</head>
+<body>
+<div id="wrapper">
+    <svg viewBox="0 0 400 250" xmlns="http://www.w3.org/2000/svg"
+         preserveAspectRatio="xMidYMid meet" id="spinner">
+        <rect x="5" y="5" width="0px" height="0px"
+              fill="transparent" stroke="#dfdfdf" stroke-width="5"
+              rx="20" ry="20"/>
+    </svg>
+    <div id="mainBox">
+        <h1>8mb - by usy</h1>
+        <h3 data-default="Drag and drop, paste any video file, or click here to locally compress!"
+            data-processing="Processing... please wait before adding more files">
+            Drag and drop, paste any video file, or click here to locally compress!
+        </h3>
+        <p>it may be slow but it's all done on your device, no data ever leaves it</p>
+        <p>Not working? Turn on "Force single threaded mode" in the settings!</p>
+        <div id="videos">
+            <div id="progress">
+                <div></div>
+                <div>0% (Video 0/0)</div>
+            </div>
+        </div>
+    </div>
+    <div id="footer">
+        <button id="settings"><h3>Settings</h3></button>
+        <button id="cancelCurrent" disabled><h3>Cancel Current</h3></button>
+        <button id="cancelAll" disabled><h3>Cancel All</h3></button>
+        <button id="updateAvailable" class="hidden"><h3>Update Available. Click to update</h3></button>
+    </div>
+</div>
+<div id="bottomContent">
+    <a href="https://github.com/usyless/8mb" target="_blank">source code</a>
+</div>
+
+<template id="settingsTemplate">
+    <div id="settingsMenu">
+        <div>
+            <label for="forceSingleThreaded">Force single threaded mode (default off): </label>
+            <input type="checkbox" id="forceSingleThreaded">
+        </div>
+        <div>
+            <label for="targetFileSize">Target file size (MB -> Blank for default): </label>
+            <input type="number" id="targetFileSize" min="0">
+        </div>
+        <div>
+            <label for="ffmpegPreset">FFmpeg encoder preset:</label>
+            <select id="ffmpegPreset">
+                <option value="ultrafast">ultrafast (default)</option>
+                <option value="superfast">superfast</option>
+                <option value="veryfast">veryfast</option>
+                <option value="faster">faster</option>
+                <option value="fast">fast</option>
+                <option value="medium">medium (ffmpeg default, very slow here though)</option>
+                <option value="slow">slow</option>
+                <option value="slower">slower</option>
+                <option value="veryslow">veryslow</option>
+            </select>
+        </div>
+    </div>
+</template>
+
+<input type="file" id="file" accept="video/*" class="hidden">
+<script src="./updater.js" type="module"></script>
+<script src="./ffmpeg.js"></script>
+<script src="./index.js" type="module"></script>
+</body>
+</html>
