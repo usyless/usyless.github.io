@@ -52,7 +52,6 @@ let cancelAll;
 
 const runAsync = (...args) => Promise.allSettled(args);
 
-const targetFileSize = 8 * 1000 * 1000 * 8; // bits -> 8MB
 const codecOverheadMultiplier = 0.9;
 const maxAudioSizeMultiplier = 0.5;
 
@@ -115,9 +114,9 @@ fileInput.addEventListener('change', async () => {
         }
 
         const targetSize = ((settings.targetFileSize)
-            ? (settings.targetFileSize * 1000 * 1000 * 8)
-            : (targetFileSize)
-        ) * codecOverheadMultiplier;
+            ? (settings.targetFileSize)
+            : (+settings.defaultVideoSize)
+        ) * 1000 * 1000 * 8 * codecOverheadMultiplier;
 
         if ((file.size * 8) <= targetSize) { // convert into bits
             const res = await createPopup(`File ${inputFileName} is already under the desired size!`, {
@@ -227,18 +226,29 @@ fileInput.addEventListener('change', async () => {
         let audioBitrate; // bps
         let audioSize; // bits
 
-        for (const audioBR of auto_audio_bitrates) {
-            audioBitrate = audioBR;
-            audioSize = audioBR * duration;
-            if (audioSize < (targetSize * maxAudioSizeMultiplier)) break;
+        if (settings.customAudioBitrate) {
+            audioBitrate = settings.customAudioBitrate * 1000;
+            audioSize = audioBitrate * duration;
+        } else {
+            for (const audioBR of auto_audio_bitrates) {
+                audioBitrate = audioBR;
+                audioSize = audioBR * duration;
+                if (audioSize < (targetSize * maxAudioSizeMultiplier)) break;
+            }
         }
 
         // dont check against leeway here incase its gone super low and still isn't passing
         // although that shouldn't be the case ever
         if (audioSize >= targetSize) {
             await deleteInputFile();
-            console.error(`Audio of video ${inputFileName} will be larger than allowed size!`);
-            await createPopup(`Audio of video ${inputFileName} will be larger than allowed size!`);
+            console.error(`Audio of video ${inputFileName} will be larger than target size!`);
+
+            if (settings.customAudioBitrate) {
+                console.error(`This is potentially due to the custom set bitrate of ${settings.customAudioBitrate}kbps`);
+                await createPopup(`Audio of video ${inputFileName} will be larger than target size!\nMaybe try disabling your custom audio bitrate (${settings.customAudioBitrate}kbps)`);
+            } else {
+                await createPopup(`Audio of video ${inputFileName} will be larger than target size!`);
+            }
             continue;
         }
 
@@ -333,6 +343,7 @@ const showSettings = () => {
 
     set.querySelector('#forceSingleThreaded').checked = currSet.forceSingleThreaded;
     set.querySelector('#targetFileSize').value = currSet.targetFileSize;
+    set.querySelector('#customAudioBitrate').value = currSet.customAudioBitrate;
     set.querySelector('#ffmpegPreset').value = currSet.ffmpegPreset;
 
     set.serialise = () => {
@@ -340,11 +351,13 @@ const showSettings = () => {
         return {
             forceSingleThreaded: set.querySelector('#forceSingleThreaded').checked,
             targetFileSize: +set.querySelector('#targetFileSize').value,
-            ffmpegPreset: set.querySelector('#ffmpegPreset').value
+            customAudioBitrate: +set.querySelector('#customAudioBitrate').value,
+            ffmpegPreset: set.querySelector('#ffmpegPreset').value,
+            defaultVideoSize: document.getElementById('defaultVideoSize').value
         };
     }
-    createPopup(set).then((value) => {
-        localStorage.setItem('settings', JSON.stringify(value));
+    createPopup(set, {buttons: 'Save Settings'}).then((value) => {
+        if (typeof value === 'object') localStorage.setItem('settings', JSON.stringify(value));
     });
 }
 document.getElementById('settings').addEventListener('click', showSettings);
@@ -364,12 +377,26 @@ const getSettings = () => {
         set.targetFileSize = 0;
     }
 
+    if (typeof set.customAudioBitrate !== 'number' || set.customAudioBitrate < 0) {
+        set.customAudioBitrate = 0;
+    }
+
     if (typeof set.ffmpegPreset !== 'string') {
         set.ffmpegPreset = "ultrafast";
     }
 
+    const defaultVideoSizes = ["8", "10", "25", "50"];
+    if (!defaultVideoSizes.includes(set.defaultVideoSize)) {
+        set.defaultVideoSize = "8";
+    }
+
     return set;
 }
+
+document.getElementById('defaultVideoSize').addEventListener('change', (e) => {
+    localStorage.setItem('settings', JSON.stringify({...getSettings(), defaultVideoSize: e.currentTarget.value}));
+});
+document.getElementById('defaultVideoSize').value = getSettings().defaultVideoSize;
 
 const enableCancel = () => {
     document.getElementById('cancelCurrent').disabled = false;
