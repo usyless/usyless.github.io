@@ -18,8 +18,9 @@ const toBlobURL = async (url, mimeType) => {
 }
 
 const localStorageSettingsName = '8mb-settings';
-
-let onProgress;
+const ffmpegSingleBase = 'ffmpeg/';
+const ffmpegMTBase = 'ffmpeg-mt/';
+let baseURL;
 
 if (navigator.userAgent.includes('Edg/')) {
     for (const elem of document.querySelectorAll('[data-edge]')) elem.classList.remove('hidden');
@@ -32,19 +33,15 @@ const getFFmpeg = (() => {
         console.info(message);
     });
 
-    ffmpeg.on('progress', ({progress, time}) => {
-        onProgress?.(progress, time);
-    });
-
     return async (forceSingleThreaded, signal) => {
         if (!ffmpeg.loaded) {
             try {
-                const baseURL = (forceSingleThreaded || !window.crossOriginIsolated) ? 'ffmpeg/' : 'ffmpeg-mt/';
+                baseURL = (forceSingleThreaded || !window.crossOriginIsolated) ? ffmpegSingleBase : ffmpegMTBase;
                 const loadData = {
                     coreURL: await toBlobURL(baseURL + 'ffmpeg-core.js', 'text/javascript'),
                     wasmURL: await toBlobURL(baseURL + 'ffmpeg-core.wasm', 'application/wasm')
                 }
-                if (baseURL === 'ffmpeg-mt/') {
+                if (baseURL === ffmpegMTBase) {
                     console.log('Using multi threaded mode');
                     loadData.workerURL = await toBlobURL(baseURL + 'ffmpeg-core.worker.js', 'text/javascript');
                 } else {
@@ -75,6 +72,8 @@ let cancelCurrent;
 let cancelAll;
 
 const runAsync = (...args) => Promise.allSettled(args);
+
+const defaultVideoSizes = ["8", "10", "25", "50"];
 
 const codecOverheadMultiplier = 0.9;
 const maxAudioSizeMultiplier = 0.1;
@@ -123,8 +122,8 @@ fileInput.addEventListener('change', async () => {
 
     let ffmpeg;
 
-    let index = 0;
-    for (const file of files) {
+    for (let index = 1; index <= files.length; ++index) {
+        const file = files[index - 1];
         // always terminate ffmpeg
         ffmpeg?.terminate();
 
@@ -158,18 +157,9 @@ fileInput.addEventListener('change', async () => {
             else if (currentCancelled) continue;
         } catch (e) {
             console.error('Error loading ffmpeg:', e);
-            fileInput.disabled = false;
-            setProgressBar(0, index);
-            cancelSpinner();
-            setDefaultText();
-            disableCancel();
-            ProgressBar.classList.remove('animate');
-            onProgress = null;
             await createPopup('Failed to load FFmpeg, maybe try again in single threaded mode?');
             break;
         }
-        ++index;
-        onProgress = null;
 
         if (!file.type.startsWith('video/')) {
             console.log(`File ${originalInputFileName} is not a video file!`);
@@ -330,17 +320,7 @@ fileInput.addEventListener('change', async () => {
         }
 
         const videoBitrate = Math.floor((targetSize - audioSize) / duration); // bps
-
-        onProgress = (progress, time) => {
-            console.log(`Video ${inputFileName} -> progress: ${progress}, time: ${time}`);
-            if (progress <= 100 && progress >= 0) {
-                setProgressBar((5 + (95 * progress)).toFixed(1), index);
-            }
-        };
-
-        const preset = ffmpeg_presets.includes(settings.ffmpegPreset)
-            ? (settings.ffmpegPreset)
-            : (ffmpeg_presets[0]);
+        const preset = settings.ffmpegPreset;
 
         console.log(`Video bitrate: ${videoBitrate / 1000}kbps\nAudio bitrate: ${audioBitrate / 1000}kbps\nPreset: ${preset}\nFile: ${inputFileName}`);
 
@@ -360,6 +340,44 @@ fileInput.addEventListener('change', async () => {
 
         console.log(`Setting dimensions:`, dimensions);
 
+        const onProgress = ({progress, time}) => {
+            console.log(`Video ${inputFileName} -> progress: ${progress}, time: ${time}`);
+            if (progress <= 1 && progress >= 0) {
+                setProgressBar((5 + (95 * progress)).toFixed(1), index);
+            }
+        };
+
+        ffmpeg.on('progress', onProgress);
+
+        let disableMT = false;
+
+        if (baseURL === ffmpegMTBase) {
+            // check if MT is broken, if so reload in single threaded
+            void (async (timeout) => {
+                let progressFired = false;
+                const onProgress = () => {
+                    progressFired = true
+                    stopListen();
+                }
+                const stopListen = () => ffmpeg.off('progress', onProgress);
+                ffmpeg.on('progress', onProgress);
+
+                await new Promise((resolve) => setTimeout(resolve, timeout));
+
+                if (!abort.signal.aborted && !progressFired) {
+                    const res = await createPopup(
+                        'Video processing seems to be stuck...\nIf not in firefox -> I advise switching to single threaded',
+                        {buttons: ['Single Threaded', 'Proceed Anyway']}
+                    );
+                    if (res === 'Single Threaded' || res === false) {
+                        disableMT = true;
+                        abort.abort();
+                    }
+                }
+                stopListen();
+            })(10000);
+        }
+
         const [ffmpegStatus] = await runAsync(ffmpeg.exec([
             '-i', inputFileName,
             '-c:v', 'libx264',
@@ -372,7 +390,15 @@ fileInput.addEventListener('change', async () => {
             outputFileName
         ], -1, {signal: abort.signal}));
 
+        ffmpeg.off('progress', onProgress);
+
         console.log('FFMpeg:', ffmpegStatus);
+
+        if (disableMT) {
+            --index;
+            settings.forceSingleThreaded = true;
+            continue;
+        }
 
         if (allCancelled) break;
         else if (currentCancelled) continue;
@@ -445,27 +471,66 @@ fileInput.addEventListener('change', async () => {
     ffmpeg.terminate();
 });
 
+const settingDefinitions = {
+    forceSingleThreaded: {
+        default: false,
+        isValid: (value) => typeof value === 'boolean',
+        getter: 'checked',
+        setter: (value) => value
+    },
+    targetFileSize: {
+        default: 0,
+        isValid: (value) => typeof value === 'number' && value >= 0 && !(Number.isNaN(value)),
+        getter: 'value',
+        setter: (value) => +value
+    },
+    customAudioBitrate: {
+        default: 0,
+        isValid: (value) => typeof value === 'number' && value >= 0 && !(Number.isNaN(value)),
+        getter: 'value',
+        setter: (value) => +value
+    },
+    ffmpegPreset: {
+        default: 'faster',
+        isValid: (value) => ffmpeg_presets.includes(value),
+        getter: 'value',
+        setter: (value) => value
+    },
+    defaultVideoSize: {
+        default: "8",
+        isValid: (value) => defaultVideoSizes.includes(value),
+        getter: 'value',
+        setter: (value) => value
+    },
+    disableDimensionLimit: {
+        default: false,
+        isValid: (value) => typeof value === 'boolean',
+        getter: 'checked',
+        setter: (value) => value
+    },
+}
+
 const settingsTemplate = document.getElementById('settingsTemplate');
 const showSettings = () => {
     const set = settingsTemplate.content.cloneNode(true);
-    const currSet = getSettings() ?? {};
+    const currSet = getSettings();
 
-    set.querySelector('#forceSingleThreaded').checked = currSet.forceSingleThreaded;
-    set.querySelector('#targetFileSize').value = currSet.targetFileSize;
-    set.querySelector('#customAudioBitrate').value = currSet.customAudioBitrate;
-    set.querySelector('#ffmpegPreset').value = currSet.ffmpegPreset;
-    set.querySelector('#disableDimensionLimit').checked = currSet.disableDimensionLimit;
+    for (const setting in settingDefinitions) {
+        const elem = set.querySelector(`#${setting}`);
+        if (elem) elem[settingDefinitions[setting].getter] = currSet[setting];
+    }
 
     set.serialise = () => {
         const set = document.getElementById('settingsMenu');
-        return {
-            ...getSettings(),
-            forceSingleThreaded: set.querySelector('#forceSingleThreaded').checked,
-            targetFileSize: +set.querySelector('#targetFileSize').value,
-            customAudioBitrate: +set.querySelector('#customAudioBitrate').value,
-            ffmpegPreset: set.querySelector('#ffmpegPreset').value,
-            disableDimensionLimit: set.querySelector('#disableDimensionLimit').checked
-        };
+        const currSet = getSettings();
+        for (const setting in settingDefinitions) {
+            const elem = set.querySelector(`#${setting}`);
+            if (elem) {
+                const def = settingDefinitions[setting];
+                currSet[setting] = def.setter(elem[def.getter]);
+            }
+        }
+        return currSet;
     }
     createPopup(set, {buttons: 'Save Settings'}).then((value) => {
         if (typeof value === 'object') {
@@ -478,34 +543,11 @@ document.getElementById('settings').addEventListener('click', showSettings);
 
 const getSettings = () => {
     let set = JSON.parse(localStorage.getItem(localStorageSettingsName)) || {};
+    if (typeof set !== 'object') set = {};
 
-    if (typeof set !== 'object') {
-        set = {};
-    }
-
-    if (typeof set.forceSingleThreaded !== 'boolean') {
-        set.forceSingleThreaded = false;
-    }
-
-    if (typeof set.targetFileSize !== 'number' || set.targetFileSize < 0 || Number.isNaN(set.targetFileSize)) {
-        set.targetFileSize = 0;
-    }
-
-    if (typeof set.customAudioBitrate !== 'number' || set.customAudioBitrate < 0 || Number.isNaN(set.customAudioBitrate)) {
-        set.customAudioBitrate = 0;
-    }
-
-    if (typeof set.ffmpegPreset !== 'string') {
-        set.ffmpegPreset = "faster";
-    }
-
-    const defaultVideoSizes = ["8", "10", "25", "50"];
-    if (!defaultVideoSizes.includes(set.defaultVideoSize)) {
-        set.defaultVideoSize = "8";
-    }
-
-    if (typeof set.disableDimensionLimit !== 'boolean') {
-        set.disableDimensionLimit = false;
+    for (const setting in settingDefinitions) {
+        const definition = settingDefinitions[setting];
+        if (!definition.isValid(set[setting])) set[setting] = definition.default;
     }
 
     return set;
