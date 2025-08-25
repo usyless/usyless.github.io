@@ -194,12 +194,6 @@ p {
     color: var(--text-primary-lower-opacity) ;
 }
 
-@keyframes moveRight {
-    to {
-        transform: translateX(120px);
-    }
-}
-
 #progress {
     border-radius: var(--radius);
     display: flex;
@@ -214,24 +208,8 @@ p {
         position: absolute;
         height: 100%;
         transition: width 0.1s ease-in-out !important;
+        background-color: var(--progress);
         width: 0;
-        overflow: hidden;
-    }
-
-    > :first-child.animate::before {
-        animation: moveRight 4s infinite linear;
-    }
-
-    > :first-child::before {
-        content: "";
-        position: absolute;
-        width: calc(100% + 120px);
-        height: 100%;
-        top: 0;
-        left: -120px;
-        bottom: 0;
-        z-index: -1;
-        background: url("./assets/progress.svg") repeat-x left top;
     }
 
     > :last-child {
@@ -324,20 +302,5 @@ input[type="text"] {
     select {
         flex-grow: 0;
         width: auto;
-    }
-}
-
-[data-edge] {
-    border: solid var(--text-primary) 1px;
-    padding: var(--spacing-larger);
-    border-radius: var(--radius-larger);
-    margin-bottom: 15px;
-
-    > :first-child {
-        margin-top: 0;
-    }
-
-    > :last-child {
-        margin-bottom: 0;
     }
 }
