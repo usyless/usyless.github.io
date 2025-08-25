@@ -65,20 +65,10 @@ let cancelAll;
 const runAsync = (...args) => Promise.allSettled(args);
 
 const codecOverheadMultiplier = 0.9;
-const maxAudioSizeMultiplier = 0.1;
+const maxAudioSizeMultiplier = 0.5;
 
 const ffmpeg_presets = ['ultrafast', 'superfast', 'veryfast', 'faster', 'fast', 'medium', 'slow', 'slower', 'veryslow'];
 const auto_audio_bitrates = [128 * 1000, 64 * 1000, 32 * 1000, 16 * 1000, 8 * 1000]; // bits
-
-// take into account fps too
-const bitrateToMaxDimensions = {
-    [(2 * 1000 * 1000)]: 640, // gives 360p
-    [(4 * 1000 * 1000)]: 854, // gives 480p
-    [(8 * 1000 * 1000)]: 1280, // gives 720p
-    [(15 * 1000 * 1000)]: 1920, // gives 1080p
-    [(30 * 1000 * 1000)]: 2560 // gives 1440p
-    // otherwise none i guess
-}
 
 /** @type {HTMLInputElement} */
 const fileInput = document.getElementById('file');
@@ -200,7 +190,7 @@ fileInput.addEventListener('change', async () => {
             const res = await createPopup(`File ${originalInputFileName} is already under the desired size!`, {
                 buttons: ['Process Anyway', 'Skip']
             });
-            if (res === 'Skip' || res === false) {
+            if (res === 'Skip') {
                 console.log(`File ${inputFileName} is already under desired size!`);
                 continue;
             }
@@ -233,13 +223,7 @@ fileInput.addEventListener('change', async () => {
 
         setProgressBar(4, index);
 
-        const [ffprobeStatus] = await runAsync(ffmpeg.ffprobe([
-            '-v', 'error',
-            '-show_entries', 'format=duration',
-            '-of', 'default=noprint_wrappers=1:nokey=1',
-            inputFileName,
-            '-o', output_info
-        ], -1, {signal: abort.signal}));
+        const [ffprobeStatus] = await runAsync(ffmpeg.ffprobe(['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', inputFileName, '-o', output_info], -1, {signal: abort.signal}));
 
         console.log('FFProbe:', ffprobeStatus);
 
@@ -256,8 +240,6 @@ fileInput.addEventListener('change', async () => {
 
         const [durationResult] = await runAsync(ffmpeg.readFile(output_info, "utf8", {signal: abort.signal}));
 
-        console.log('Video stats:', durationResult);
-
         if (allCancelled) break;
         else if (currentCancelled) continue;
 
@@ -269,9 +251,7 @@ fileInput.addEventListener('change', async () => {
 
         const duration = Number(durationResult.value);
 
-        console.log(`Duration: ${duration}`);
-
-        if (duration == null || Number.isNaN(duration) || duration <= 0) {
+        if (Number.isNaN(duration) || duration <= 0) {
             console.error(`Failed to get duration of video ${inputFileName}!`);
             await createPopup(`Failed to get duration of video ${originalInputFileName}!`);
             continue;
@@ -320,27 +300,10 @@ fileInput.addEventListener('change', async () => {
 
         console.log(`Video bitrate: ${videoBitrate / 1000}kbps\nAudio bitrate: ${audioBitrate / 1000}kbps\nPreset: ${preset}\nFile: ${inputFileName}`);
 
-        let dimensions = [];
-
-        if (!settings.disableDimensionLimit) {
-            for (const bitrate in bitrateToMaxDimensions) {
-                if (videoBitrate <= +bitrate) {
-                    const size = bitrateToMaxDimensions[bitrate];
-                    dimensions.push('-vf');
-                    dimensions.push(`scale='if(gt(a,1),min(iw\\,${size}),-1)':'if(gt(a,1),-1,min(ih\\,${size}))'`);
-                    break;
-                }
-            }
-            // if it hasn't been assigned one it means bitrate is high enough to not care
-        }
-
-        console.log(`Setting dimensions:`, dimensions);
-
         const [ffmpegStatus] = await runAsync(ffmpeg.exec([
             '-i', inputFileName,
             '-c:v', 'libx264',
             '-preset', preset,
-            ...dimensions,
             '-b:v', videoBitrate.toString(),
             '-maxrate', videoBitrate.toString(),
             '-c:a', 'aac',
@@ -355,35 +318,8 @@ fileInput.addEventListener('change', async () => {
 
         if ((ffmpegStatus.status !== "fulfilled") || (ffmpegStatus.value !== 0)) {
             console.error(`Failed to exec ffmpeg command for video ${inputFileName} with error:`, ffmpegStatus.reason);
-
-            if (dimensions.length > 0) {
-                console.log(`Trying to run command again for ${inputFileName} without dimensions limit`);
-                // try again with no limit
-                const [ffmpegStatus] = await runAsync(ffmpeg.exec([
-                    '-i', inputFileName,
-                    '-c:v', 'libx264',
-                    '-preset', preset,
-                    '-b:v', videoBitrate.toString(),
-                    '-maxrate', videoBitrate.toString(),
-                    '-c:a', 'aac',
-                    '-b:a', audioBitrate.toString(),
-                    outputFileName
-                ], -1, {signal: abort.signal}));
-
-                console.log('FFMpeg:', ffmpegStatus);
-
-                if (allCancelled) break;
-                else if (currentCancelled) continue;
-
-                if ((ffmpegStatus.status !== "fulfilled") || (ffmpegStatus.value !== 0)) {
-                    console.error(`Failed to exec ffmpeg command for video ${inputFileName} with error:`, ffmpegStatus.reason);
-                    await createPopup(`Failed to exec ffmpeg command for video ${originalInputFileName} with error: ${ffmpegStatus.reason}`);
-                    continue;
-                }
-            } else {
-                await createPopup(`Failed to exec ffmpeg command for video ${originalInputFileName} with error: ${ffmpegStatus.reason}`);
-                continue;
-            }
+            await createPopup(`Failed to exec ffmpeg command for video ${originalInputFileName} with error: ${ffmpegStatus.reason}`);
+            continue;
         }
 
         const [videoStatus] = await runAsync(ffmpeg.readFile(outputFileName, "binary", {signal: abort.signal}));
@@ -428,17 +364,15 @@ const showSettings = () => {
     set.querySelector('#targetFileSize').value = currSet.targetFileSize;
     set.querySelector('#customAudioBitrate').value = currSet.customAudioBitrate;
     set.querySelector('#ffmpegPreset').value = currSet.ffmpegPreset;
-    set.querySelector('#disableDimensionLimit').checked = currSet.disableDimensionLimit;
 
     set.serialise = () => {
         const set = document.getElementById('settingsMenu');
         return {
-            ...getSettings(),
             forceSingleThreaded: set.querySelector('#forceSingleThreaded').checked,
             targetFileSize: +set.querySelector('#targetFileSize').value,
             customAudioBitrate: +set.querySelector('#customAudioBitrate').value,
             ffmpegPreset: set.querySelector('#ffmpegPreset').value,
-            disableDimensionLimit: set.querySelector('#disableDimensionLimit').checked
+            defaultVideoSize: document.getElementById('defaultVideoSize').value
         };
     }
     createPopup(set, {buttons: 'Save Settings'}).then((value) => {
@@ -461,11 +395,11 @@ const getSettings = () => {
         set.forceSingleThreaded = false;
     }
 
-    if (typeof set.targetFileSize !== 'number' || set.targetFileSize < 0 || Number.isNaN(set.targetFileSize)) {
+    if (typeof set.targetFileSize !== 'number' || set.targetFileSize < 0) {
         set.targetFileSize = 0;
     }
 
-    if (typeof set.customAudioBitrate !== 'number' || set.customAudioBitrate < 0 || Number.isNaN(set.customAudioBitrate)) {
+    if (typeof set.customAudioBitrate !== 'number' || set.customAudioBitrate < 0) {
         set.customAudioBitrate = 0;
     }
 
@@ -476,10 +410,6 @@ const getSettings = () => {
     const defaultVideoSizes = ["8", "10", "25", "50"];
     if (!defaultVideoSizes.includes(set.defaultVideoSize)) {
         set.defaultVideoSize = "8";
-    }
-
-    if (typeof set.disableDimensionLimit !== 'boolean') {
-        set.disableDimensionLimit = false;
     }
 
     return set;
@@ -656,11 +586,6 @@ requestAnimationFrame(() => {
     startSpinner();
     cancelSpinner();
 });
-setTimeout(() => {
-    resizeSpinner();
-    startSpinner();
-    cancelSpinner();
-}, 50);
 
 window.addEventListener('resize', resizeSpinner, {passive: true});
 
