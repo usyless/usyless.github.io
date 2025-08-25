@@ -66,9 +66,11 @@ const runAsync = (...args) => Promise.allSettled(args);
 
 const codecOverheadMultiplier = 0.9;
 const maxAudioSizeMultiplier = 0.1;
+const ifNeededMaxAudioSizeMultiplier = 0.3;
 
 const ffmpeg_presets = ['ultrafast', 'superfast', 'veryfast', 'faster', 'fast', 'medium', 'slow', 'slower', 'veryslow'];
-const auto_audio_bitrates = [128 * 1000, 64 * 1000, 32 * 1000, 16 * 1000, 8 * 1000]; // bits
+const auto_audio_bitrates = [128 * 1000, 96 * 1000, 64 * 1000]; // bits
+const if_really_needed_audio_bitrates = [32 * 1000, 16 * 1000, 8 * 1000];
 
 // take into account fps too
 const bitrateToMaxDimensions = {
@@ -289,6 +291,15 @@ fileInput.addEventListener('change', async () => {
                 audioSize = audioBR * duration;
                 if (audioSize < (targetSize * maxAudioSizeMultiplier)) break;
             }
+
+            if (audioSize >= targetSize) {
+                // fall back to the very bad audio qualities
+                for (const audioBR of if_really_needed_audio_bitrates) {
+                    audioBitrate = audioBR;
+                    audioSize = audioBR * duration;
+                    if (audioSize < (targetSize * ifNeededMaxAudioSizeMultiplier)) break;
+                }
+            }
         }
 
         // dont check against leeway here incase its gone super low and still isn't passing
@@ -314,13 +325,13 @@ fileInput.addEventListener('change', async () => {
             }
         };
 
-        let preset = ffmpeg_presets.includes(settings.ffmpegPreset)
+        const preset = ffmpeg_presets.includes(settings.ffmpegPreset)
             ? (settings.ffmpegPreset)
             : (ffmpeg_presets[0]);
 
         console.log(`Video bitrate: ${videoBitrate / 1000}kbps\nAudio bitrate: ${audioBitrate / 1000}kbps\nPreset: ${preset}\nFile: ${inputFileName}`);
 
-        let dimensions = [];
+        const dimensions = [];
 
         if (!settings.disableDimensionLimit) {
             for (const bitrate in bitrateToMaxDimensions) {
