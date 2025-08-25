@@ -4,9 +4,20 @@ import {createPopup} from "./popups.js";
 
 const {FFmpeg} = /** @type {typeof import('@ffmpeg/ffmpeg')} */ FFmpegWASM;
 
-const toBlobURL = async (url, mimeType) => URL.createObjectURL(
-    new Blob([await (await fetch(url)).arrayBuffer()], {type: mimeType})
-);
+const blobURLCache = new Map();
+const toBlobURL = async (url, mimeType) => {
+    let cached = blobURLCache.get(url);
+    if (!cached) {
+        const r = await fetch(url);
+        const buffer = await r.arrayBuffer();
+        const blob = new Blob([buffer], {type: mimeType});
+        cached = URL.createObjectURL(blob);
+        blobURLCache.set(url, cached);
+    }
+    return cached;
+}
+
+const localStorageSettingsName = '8mb-settings';
 
 let onProgress;
 
@@ -33,13 +44,14 @@ const getFFmpeg = (() => {
                     coreURL: await toBlobURL(baseURL + 'ffmpeg-core.js', 'text/javascript'),
                     wasmURL: await toBlobURL(baseURL + 'ffmpeg-core.wasm', 'application/wasm')
                 }
-                if (window.crossOriginIsolated) {
+                if (baseURL === 'ffmpeg-mt/') {
                     console.log('Using multi threaded mode');
                     loadData.workerURL = await toBlobURL(baseURL + 'ffmpeg-core.worker.js', 'text/javascript');
                 } else {
                     console.log('Using single threaded mode');
                 }
                 console.log('Loading ffmpeg with data:', loadData);
+                console.log('Blob cache:', blobURLCache);
                 if (signal) {
                     await ffmpeg.load(loadData, {signal});
                 } else {
@@ -427,6 +439,8 @@ fileInput.addEventListener('change', async () => {
     disableCancel();
     ProgressBar.classList.remove('animate');
 
+    fileInput.value = ''; // reset so same file again still works
+
     // always terminate at the end
     ffmpeg.terminate();
 });
@@ -455,7 +469,7 @@ const showSettings = () => {
     }
     createPopup(set, {buttons: 'Save Settings'}).then((value) => {
         if (typeof value === 'object') {
-            localStorage.setItem('settings', JSON.stringify(value));
+            localStorage.setItem(localStorageSettingsName, JSON.stringify(value));
             updateDefaultVideoSize();
         }
     });
@@ -463,7 +477,7 @@ const showSettings = () => {
 document.getElementById('settings').addEventListener('click', showSettings);
 
 const getSettings = () => {
-    let set = JSON.parse(localStorage.getItem('settings')) || {};
+    let set = JSON.parse(localStorage.getItem(localStorageSettingsName)) || {};
 
     if (typeof set !== 'object') {
         set = {};
@@ -499,7 +513,7 @@ const getSettings = () => {
 
 const defaultVideoSizeElem = document.getElementById('defaultVideoSize');
 defaultVideoSizeElem.addEventListener('change', (e) => {
-    localStorage.setItem('settings', JSON.stringify({...getSettings(), defaultVideoSize: e.currentTarget.value}));
+    localStorage.setItem(localStorageSettingsName, JSON.stringify({...getSettings(), defaultVideoSize: e.currentTarget.value}));
 });
 
 const updateDefaultVideoSize = () => {
