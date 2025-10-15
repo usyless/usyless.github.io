@@ -96,6 +96,8 @@ const bitrateToMaxDimensions = {
     // otherwise none i guess
 }
 
+const FFMPEG_MINIMUM_VIDEO_BITRATE = 1000;
+
 /** @type {HTMLInputElement} */
 const fileInput = document.getElementById('file');
 const ProgressBar = document.getElementById('progress').firstElementChild;
@@ -112,7 +114,10 @@ fileInput.addEventListener('change', async () => {
 
     const totalVideos = files.length;
 
-    const settings = getSettings();
+    const originalSettings = getSettings();
+
+    // is assigned before first use
+    let settings;
 
     let ffmpeg;
 
@@ -144,6 +149,7 @@ fileInput.addEventListener('change', async () => {
         if (lastIndex !== index) {
             attempt = 1;
             currentMultiplier = codecOverheadMultipliers[0];
+            settings = structuredClone(originalSettings);
         } else if (attempt > codecOverheadMultipliers.length) { // not >= check as its -1'd
             await createPopup(`Failed to get ${originalInputFileName} below the desired filesize!`);
             continue;
@@ -312,42 +318,48 @@ fileInput.addEventListener('change', async () => {
 
         let audioBitrate; // bps
         let audioSize; // bits
+        let videoBitrate; // bps
 
         if (settings.customAudioBitrate) {
             audioBitrate = settings.customAudioBitrate * 1000;
             audioSize = audioBitrate * duration;
+            videoBitrate = Math.floor((targetSize - audioSize) / duration);
         } else {
             for (const audioBR of auto_audio_bitrates) {
                 audioBitrate = audioBR;
                 audioSize = audioBR * duration;
-                if (audioSize < (targetSize * maxAudioSizeMultiplier)) break;
+                videoBitrate = Math.floor((targetSize - audioSize) / duration);
+                if ((audioSize < (targetSize * maxAudioSizeMultiplier))
+                    && (videoBitrate > FFMPEG_MINIMUM_VIDEO_BITRATE)) break;
             }
 
-            if (audioSize >= targetSize) {
+            if ((audioSize >= targetSize) || (videoBitrate < FFMPEG_MINIMUM_VIDEO_BITRATE)) {
                 // fall back to the very bad audio qualities
                 for (const audioBR of if_really_needed_audio_bitrates) {
                     audioBitrate = audioBR;
                     audioSize = audioBR * duration;
-                    if (audioSize < (targetSize * ifNeededMaxAudioSizeMultiplier)) break;
+                    videoBitrate = Math.floor((targetSize - audioSize) / duration);
+                    if ((audioSize < (targetSize * ifNeededMaxAudioSizeMultiplier))
+                        && (videoBitrate > FFMPEG_MINIMUM_VIDEO_BITRATE)) break;
                 }
             }
         }
 
         // dont check against leeway here incase its gone super low and still isn't passing
         // although that shouldn't be the case ever
-        if (audioSize >= targetSize) {
-            console.error(`Audio of video ${inputFileName} will be larger than target size!`);
+        if ((audioSize >= targetSize) || (videoBitrate < FFMPEG_MINIMUM_VIDEO_BITRATE)) {
+            console.error(`Audio of video ${inputFileName} will be larger than target size, or video bitrate is too low!`);
 
             if (settings.customAudioBitrate) {
                 console.error(`This is potentially due to the custom set bitrate of ${settings.customAudioBitrate}kbps`);
-                await createPopup(`Audio of video ${originalInputFileName} will be larger than target size!\nMaybe try disabling your custom audio bitrate (${settings.customAudioBitrate}kbps)`);
+                await createPopup(`Audio of video ${originalInputFileName} will be larger than target size, or video bitrate is too low!\nMaybe try disabling your custom audio bitrate (${settings.customAudioBitrate}kbps)`);
             } else {
-                await createPopup(`Audio of video ${originalInputFileName} will be larger than target size!`);
+                await createPopup(`Audio of video ${originalInputFileName} will be larger than target size, or video bitrate is too low!`);
             }
             continue;
         }
 
-        const videoBitrate = Math.floor((targetSize - audioSize) / duration); // bps
+        videoBitrate = Math.floor((targetSize - audioSize) / duration); // bps
         const preset = settings.ffmpegPreset;
 
         console.log(`Video bitrate: ${videoBitrate / 1000}kbps\nAudio bitrate: ${audioBitrate / 1000}kbps\nPreset: ${preset}\nFile: ${inputFileName}`);
@@ -358,8 +370,10 @@ fileInput.addEventListener('change', async () => {
             for (const bitrate in bitrateToMaxDimensions) {
                 if (videoBitrate <= +bitrate) {
                     const size = bitrateToMaxDimensions[bitrate];
-                    dimensions.push('-vf');
-                    dimensions.push(`scale='if(gt(a,1),min(iw\\,${size}),-1)':'if(gt(a,1),-1,min(ih\\,${size}))'`);
+                    dimensions.push(
+                        '-vf',
+                        `scale='if(gt(iw,${size}),${size},iw)':'if(gt(ih,${size}),${size},ih)':force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2`
+                    );
                     break;
                 }
             }
@@ -406,7 +420,7 @@ fileInput.addEventListener('change', async () => {
             })(10000);
         }
 
-        const [ffmpegStatus] = await runAsync(ffmpeg.exec([
+        const ffmpegParameters = [
             '-i', inputFileName,
             '-map', '0:v:0', '-map', '0:a:0?',
             '-map', '-0:s', '-map', '-0:t', '-map', '-0:d',
@@ -419,7 +433,11 @@ fileInput.addEventListener('change', async () => {
             '-c:a', 'aac',
             '-b:a', audioBitrate.toString(),
             outputFileName
-        ], -1, {signal: abort.signal}));
+        ];
+        console.log("Ffmpeg command parameters:", ffmpegParameters);
+        const [ffmpegStatus] = await runAsync(
+            ffmpeg.exec(ffmpegParameters, -1, {signal: abort.signal})
+        );
 
         ffmpeg.off('progress', onProgress);
 
@@ -427,7 +445,7 @@ fileInput.addEventListener('change', async () => {
 
         if (disableMT) {
             --index;
-            settings.forceSingleThreaded = true;
+            originalSettings.forceSingleThreaded = true;
             continue;
         }
 
@@ -440,27 +458,9 @@ fileInput.addEventListener('change', async () => {
             if (dimensions.length > 0) {
                 console.log(`Trying to run command again for ${inputFileName} without dimensions limit`);
                 // try again with no limit
-                const [ffmpegStatus] = await runAsync(ffmpeg.exec([
-                    '-i', inputFileName,
-                    '-c:v', 'libx264',
-                    '-preset', preset,
-                    '-b:v', videoBitrate.toString(),
-                    '-maxrate', videoBitrate.toString(),
-                    '-c:a', 'aac',
-                    '-b:a', audioBitrate.toString(),
-                    outputFileName
-                ], -1, {signal: abort.signal}));
-
-                console.log('FFMpeg:', ffmpegStatus);
-
-                if (allCancelled) break;
-                else if (currentCancelled) continue;
-
-                if ((ffmpegStatus.status !== "fulfilled") || (ffmpegStatus.value !== 0)) {
-                    console.error(`Failed to exec ffmpeg command for video ${inputFileName} with error:`, ffmpegStatus.reason);
-                    await createPopup(`Failed to exec ffmpeg command for video ${originalInputFileName} with error: ${ffmpegStatus.reason}`);
-                    continue;
-                }
+                --index;
+                settings.disableDimensionLimit = true;
+                continue;
             } else {
                 await createPopup(`Failed to exec ffmpeg command for video ${originalInputFileName} with error: ${ffmpegStatus.reason}`);
                 continue;
