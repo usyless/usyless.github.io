@@ -234,7 +234,7 @@ fileInput.addEventListener('change', async () => {
         const targetSizeNoMultiplier = ((settings.targetFileSize)
             ? (settings.targetFileSize)
             : (+settings.defaultVideoSize)
-        ) * 1024 * 1024 * 8 * currentMultiplier;
+        ) * 1024 * 1024 * 8;
         const targetSize = targetSizeNoMultiplier * currentMultiplier;
 
         if ((file.size * 8) <= targetSizeNoMultiplier) { // convert into bits
@@ -448,6 +448,7 @@ fileInput.addEventListener('change', async () => {
         if (disableMT) {
             --index;
             originalSettings.forceSingleThreaded = true;
+            settings.forceSingleThreaded = true;
             continue;
         }
 
