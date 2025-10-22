@@ -16,10 +16,6 @@
     }
 }
 
-@view-transition {
-    navigation: auto;
-}
-
 #usytrace-logo {
     view-transition-name: usytrace-logo;
 }
@@ -30,11 +26,6 @@
 
 .project:has(#usytrace-logo) {
     view-transition-name: usytrace-box;
-}
-
-::view-transition-old(root),
-::view-transition-new(root) {
-    left: 0;
 }
 
 * {
@@ -88,14 +79,9 @@ main {
         width: var(--project-width);
         aspect-ratio: var(--project-aspect-ratio);
         position: relative;
-        background-color: var(--project-background);
         border-radius: var(--radius);
 
         > div {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             width: var(--project-width);
             aspect-ratio: var(--project-aspect-ratio);
             display: flex;
@@ -110,13 +96,14 @@ main {
         }
 
         &::before {
+            z-index: -1;
             content: '';
             transition: 0.2s ease-in-out;
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: inherit;
+            background-color: var(--project-background);
             border-radius: inherit;
             width: var(--project-width);
             aspect-ratio: var(--project-aspect-ratio);

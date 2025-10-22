@@ -1,0 +1,11 @@
+@view-transition {
+    navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root),
+::view-transition-old(usytrace-logo),
+::view-transition-old(usytrace-text),
+::view-transition-old(usytrace-box) {
+    left: 0;
+}
