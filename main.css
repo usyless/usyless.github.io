@@ -37,7 +37,7 @@
     view-transition-name: usytrace-box;
 }
 
-.project:has(#8mb-logo) {
+.project:has(#eightmb-logo) {
     view-transition-name: eightmb-box;
 }
 
