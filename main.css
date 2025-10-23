@@ -90,6 +90,7 @@ main {
 
     .project {
         width: var(--project-width);
+        height: 100%;
         aspect-ratio: var(--project-aspect-ratio);
         position: relative;
         border-radius: var(--radius);
