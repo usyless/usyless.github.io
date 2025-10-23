@@ -16,6 +16,15 @@
     }
 }
 
+@view-transition {
+    navigation: auto;
+}
+
+::view-transition-old(*),
+::view-transition-new(*) {
+    left: 0;
+}
+
 #usytrace-logo {
     view-transition-name: usytrace-logo;
 }
@@ -26,6 +35,10 @@
 
 .project:has(#usytrace-logo) {
     view-transition-name: usytrace-box;
+}
+
+.project:has(#8mb-logo) {
+    view-transition-name: eightmb-box;
 }
 
 * {
