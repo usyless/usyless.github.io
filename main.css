@@ -109,6 +109,7 @@ main {
         }
 
         &::before {
+            pointer-events: none;
             z-index: -1;
             content: '';
             transition: 0.2s ease-in-out;
