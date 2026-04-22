@@ -39,16 +39,18 @@ const getFFmpeg = (() => {
                 console.log('Force single threaded:', forceSingleThreaded);
                 console.log('Cross origin isolated?:', window.crossOriginIsolated);
                 baseURL = (forceSingleThreaded || !window.crossOriginIsolated) ? ffmpegSingleBase : ffmpegMTBase;
-                const loadData = {
-                    coreURL: await toBlobURL(baseURL + 'ffmpeg-core.js', 'text/javascript'),
-                    wasmURL: await toBlobURL(baseURL + 'ffmpeg-core.wasm', 'application/wasm')
-                }
+                const loadData = {};
+                const promises = [
+                    toBlobURL(baseURL + 'ffmpeg-core.js', 'text/javascript').then(r => (loadData.coreURL = r)),
+                    toBlobURL(baseURL + 'ffmpeg-core.wasm', 'application/wasm').then(r => (loadData.wasmURL = r)),
+                ];
                 if (baseURL === ffmpegMTBase) {
                     console.log('Using multi threaded mode');
-                    loadData.workerURL = await toBlobURL(baseURL + 'ffmpeg-core.worker.js', 'text/javascript');
+                    promises.push(toBlobURL(baseURL + 'ffmpeg-core.worker.js', 'text/javascript').then(r => (loadData.workerURL = r)));
                 } else {
                     console.log('Using single threaded mode');
                 }
+                await Promise.all(promises);
                 console.log('Loading ffmpeg with data:', loadData);
                 console.log('Blob cache:', blobURLCache);
                 if (signal) {
@@ -434,6 +436,7 @@ fileInput.addEventListener('change', async () => {
             '-maxrate', videoBitrate.toString(),
             '-c:a', 'aac',
             '-b:a', audioBitrate.toString(),
+            '-threads', navigator.hardwareConcurrency.toString(), // 4 for chromium, unset for firefox?
             outputFileName
         ];
         console.log("Ffmpeg command parameters:", ffmpegParameters);
@@ -773,12 +776,7 @@ const fixSpinnerInitial = () => {
     startSpinner();
     cancelSpinner();
 };
-// this solution is awful
 requestAnimationFrame(fixSpinnerInitial);
-setTimeout(fixSpinnerInitial, 50);
-setTimeout(fixSpinnerInitial, 1000);
-setTimeout(fixSpinnerInitial, 5000);
-setTimeout(fixSpinnerInitial, 10000);
 
 window.addEventListener('resize', resizeSpinner, {passive: true});
 
