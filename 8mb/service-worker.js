@@ -1,4 +1,4 @@
-const cacheName = 'v33';
+const cacheName = 'v34';
 
 const contentToCache = [
     './favicon.ico',
@@ -9,11 +9,8 @@ const contentToCache = [
     './styles.css',
     './shared.css',
     './popup.css',
-    './index.js',
-    './popups.js',
-    './ffmpeg.js',
-    './822.ffmpeg.js',
-    './updater.js',
+    './bundle.js',
+    './worker.js',
 
     './8mb.webmanifest',
 
