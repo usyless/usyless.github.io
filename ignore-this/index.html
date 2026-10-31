@@ -6,58 +6,257 @@
     <title>PonyCon POS</title>
     <style>
         :root {
-            --primary: #ec407a; /* Pinkie Pie Pink */
-            --secondary: #7e57c2; /* Twilight Purple */
-            --bg: #fce4ec;
-            --card: #ffffff;
-            --text: #333333;
+            --bg: #12101a;
+            --card: #1c1829;
+            --card-border: #2d2642;
+            --primary: #ff4081; /* Neon Pink */
+            --primary-hover: #f50057;
+            --secondary: #b388ff; /* Twilight Lavender */
+            --accent: #7c4dff;
+            --text: #f5f3fa;
+            --text-dim: #9d96b3;
+            --input-bg: #272239;
+            --success: #00e676;
+            --danger: #ff5252;
         }
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { margin: 0; padding: 0; background-color: var(--bg); color: var(--text); padding-bottom: 85px; }
+        body { margin: 0; padding: 0; background-color: var(--bg); color: var(--text); padding-bottom: 90px; }
         
         /* Header & Navigation */
-        header { background: linear-gradient(135deg, var(--secondary), var(--primary)); color: white; padding: 15px; text-align: center; font-size: 1.3rem; font-weight: bold; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        nav { display: flex; position: fixed; bottom: 0; width: 100%; background: white; box-shadow: 0 -2px 5px rgba(0,0,0,0.1); z-index: 100; }
-        nav button { flex: 1; padding: 14px 5px; border: none; background: none; font-size: 0.95rem; font-weight: bold; color: #777; cursor: pointer; }
-        nav button.active { color: var(--primary); border-top: 3px solid var(--primary); background: #fff9fb; }
+        header { 
+            background: linear-gradient(135deg, #4a148c, #880e4f); 
+            color: white; 
+            padding: 15px; 
+            text-align: center; 
+            font-size: 1.25rem; 
+            font-weight: 800; 
+            position: sticky; 
+            top: 0; 
+            z-index: 100; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+        }
+        nav { 
+            display: flex; 
+            position: fixed; 
+            bottom: 0; 
+            width: 100%; 
+            background: #181424; 
+            border-top: 1px solid var(--card-border); 
+            z-index: 100; 
+        }
+        nav button { 
+            flex: 1; 
+            padding: 14px 5px; 
+            border: none; 
+            background: none; 
+            font-size: 0.95rem; 
+            font-weight: bold; 
+            color: var(--text-dim); 
+            cursor: pointer; 
+        }
+        nav button.active { 
+            color: var(--primary); 
+            border-top: 3px solid var(--primary); 
+            background: rgba(255, 64, 129, 0.08); 
+        }
 
         /* Views */
         .view { display: none; padding: 15px; }
         .view.active { display: block; }
 
         /* Search Bar */
-        .search-box { width: 100%; padding: 12px 14px; border-radius: 25px; border: 2px solid var(--primary); font-size: 1rem; margin-bottom: 12px; outline: none; background: white; }
+        .search-box { 
+            width: 100%; 
+            padding: 12px 16px; 
+            border-radius: 25px; 
+            border: 1px solid var(--card-border); 
+            font-size: 1rem; 
+            margin-bottom: 12px; 
+            outline: none; 
+            background: var(--input-bg); 
+            color: white; 
+        }
+        .search-box:focus { border-color: var(--primary); }
 
         /* Checkout Grid */
         .product-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .prod-btn { background: var(--card); border: 2px solid var(--primary); border-radius: 12px; padding: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; justify-content: space-between; cursor: pointer; transition: transform 0.05s; }
-        .prod-btn:active { transform: scale(0.97); background-color: #f8bbd0; }
-        .prod-btn.out-of-stock { border-color: #ccc; opacity: 0.55; pointer-events: none; }
+        .prod-btn { 
+            background: var(--card); 
+            border: 1px solid var(--card-border); 
+            border-radius: 12px; 
+            padding: 10px; 
+            text-align: center; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: space-between; 
+            cursor: pointer; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+            position: relative;
+            user-select: none;
+        }
+        .prod-btn:active { transform: scale(0.97); border-color: var(--primary); }
+        .prod-btn.out-of-stock { opacity: 0.4; pointer-events: none; border-color: #444; }
         
-        .prod-img-wrap { width: 100%; height: 95px; border-radius: 8px; overflow: hidden; background: #f3f3f3; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; font-size: 2.2rem; }
+        .badge-deal {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: var(--primary);
+            color: white;
+            font-size: 0.65rem;
+            padding: 3px 6px;
+            border-radius: 10px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+        }
+
+        .prod-img-wrap { 
+            width: 100%; 
+            height: 95px; 
+            border-radius: 8px; 
+            overflow: hidden; 
+            background: #13101c; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin-bottom: 8px; 
+            font-size: 2.2rem; 
+        }
         .prod-img { width: 100%; height: 100%; object-fit: cover; }
-        .prod-name { font-weight: bold; font-size: 0.95rem; margin-bottom: 4px; color: var(--secondary); line-height: 1.2; }
+        .prod-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; color: var(--secondary); line-height: 1.2; }
         .prod-price { font-size: 1.1rem; font-weight: 800; color: var(--primary); }
-        .prod-stock { font-size: 0.8rem; color: #666; margin-top: 4px; }
+        .prod-stock { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; }
 
         /* Cart Bar */
-        .cart-panel { background: white; border-radius: 12px; padding: 15px; margin-top: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
-        .cart-controls button { background: var(--secondary); color: white; border: none; border-radius: 5px; width: 30px; height: 30px; font-weight: bold; font-size: 1.1rem; margin: 0 4px; cursor: pointer; }
-        .cart-total { font-size: 1.4rem; font-weight: bold; text-align: right; margin: 15px 0; color: var(--primary); }
+        .cart-panel { 
+            background: var(--card); 
+            border: 1px solid var(--card-border); 
+            border-radius: 14px; 
+            padding: 15px; 
+            margin-top: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); 
+        }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--card-border); }
+        .cart-controls button { 
+            background: var(--secondary); 
+            color: #12101a; 
+            border: none; 
+            border-radius: 6px; 
+            width: 32px; 
+            height: 32px; 
+            font-weight: 800; 
+            font-size: 1.1rem; 
+            margin: 0 3px; 
+            cursor: pointer; 
+        }
+        .cart-controls button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .cart-discount { color: var(--success); font-size: 0.9rem; font-weight: bold; text-align: right; margin-top: 8px; line-height: 1.4; }
+        .cart-total { font-size: 1.5rem; font-weight: 900; text-align: right; margin: 12px 0; color: var(--primary); }
         .pay-btns { display: flex; gap: 10px; }
         .btn-main { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; color: white; cursor: pointer; }
-        .btn-cash { background: #4caf50; }
-        .btn-card { background: #2196f3; }
-        .btn-clear { background: #f44336; padding: 10px; margin-top: 10px; width: 100%; }
+        .btn-cash { background: #2e7d32; }
+        .btn-card { background: #1565c0; }
+        .btn-clear { background: #b71c1c; padding: 10px; margin-top: 10px; width: 100%; }
 
-        /* Forms & Lists */
-        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        input, select { width: 100%; padding: 12px; margin: 6px 0 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; }
-        .btn-submit { background: var(--primary); color: white; width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; }
-        .inv-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 10px 0; }
-        .del-btn { background: #ff5252; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
-        .inv-thumb { width: 45px; height: 45px; border-radius: 6px; object-fit: cover; margin-right: 10px; background: #eee; flex-shrink: 0; }
+        /* Forms & Cards */
+        .card { 
+            background: var(--card); 
+            border: 1px solid var(--card-border); 
+            padding: 16px; 
+            border-radius: 12px; 
+            margin-bottom: 15px; 
+        }
+        label { font-size: 0.85rem; font-weight: bold; color: var(--text-dim); }
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 6px 0 14px; 
+            border: 1px solid var(--card-border); 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            background: var(--input-bg); 
+            color: white; 
+            outline: none; 
+        }
+        input:focus, select:focus { border-color: var(--secondary); }
+        .btn-submit { 
+            background: var(--primary); 
+            color: white; 
+            width: 100%; 
+            padding: 12px; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+        .btn-cancel {
+            background: #424242;
+            color: white;
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            margin-top: 8px;
+            cursor: pointer;
+        }
+
+        .inv-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding: 10px 0; gap: 8px; }
+        .del-btn { background: var(--danger); color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .edit-btn { background: var(--secondary); color: #12101a; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-right: 4px; }
+        .inv-thumb { width: 45px; height: 45px; border-radius: 6px; object-fit: cover; margin-right: 10px; background: #272239; flex-shrink: 0; }
+
+        /* Size Matrix Box */
+        .sizes-box { 
+            background: var(--input-bg); 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin-bottom: 14px; 
+            border: 1px solid var(--card-border); 
+        }
+        .size-inputs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 6px; }
+        .size-col { text-align: center; }
+        .size-col input { padding: 8px 4px; text-align: center; margin: 4px 0 0; }
+
+        /* Modal for Size Selection */
+        .modal-overlay { 
+            position: fixed; 
+            top:0; left:0; width:100%; height:100%; 
+            background: rgba(0,0,0,0.75); 
+            display: none; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 200; 
+            padding: 20px; 
+        }
+        .modal { 
+            background: var(--card); 
+            border: 1px solid var(--card-border); 
+            width: 100%; 
+            max-width: 340px; 
+            border-radius: 14px; 
+            padding: 20px; 
+            text-align: center; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6); 
+        }
+        .size-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .size-pick-btn { 
+            background: var(--input-bg); 
+            color: white; 
+            border: 2px solid var(--secondary); 
+            padding: 12px; 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+        .size-pick-btn:active { background: var(--secondary); color: #12101a; }
+        .size-pick-btn.out { opacity: 0.3; border-color: #555; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -66,13 +265,14 @@
 
 <!-- SELL VIEW -->
 <div id="sell-view" class="view active">
-    <input type="search" id="search-input" class="search-box" placeholder="🔍 Search items..." oninput="renderGrid()">
+    <input type="search" id="search-input" class="search-box" placeholder="🔍 Search items, shirts, or charms..." oninput="renderGrid()">
     
     <div id="product-grid" class="product-grid"></div>
     
     <div class="cart-panel">
         <h3 style="margin-top:0; color:var(--secondary);">Current Sale</h3>
         <div id="cart-items">Cart is empty</div>
+        <div id="cart-discount" class="cart-discount" style="display:none;"></div>
         <div class="cart-total" id="cart-total">Total: £0.00</div>
         <div class="pay-btns">
             <button class="btn-main btn-cash" onclick="checkout('Cash')">💵 Cash</button>
@@ -84,25 +284,67 @@
 
 <!-- INVENTORY VIEW -->
 <div id="inv-view" class="view">
-    <div class="card">
-        <h3 style="margin-top:0;">Add / Update Product</h3>
-        <label><b>Item Name:</b></label>
-        <input type="text" id="prod-name" placeholder="e.g. Acrylic Charm">
+    <div class="card" id="product-form-card">
+        <h3 style="margin-top:0; color:var(--secondary);" id="form-title">Add New Product</h3>
         
-        <label><b>Price (£):</b></label>
-        <input type="number" id="prod-price" placeholder="e.g. 8.50" step="0.01">
+        <label>Item Name:</label>
+        <input type="text" id="prod-name" placeholder="e.g. Fluttershy Tee or Vinyl Sticker">
         
-        <label><b>Starting Stock:</b></label>
-        <input type="number" id="prod-stock" placeholder="e.g. 25">
+        <label>Single Price (£):</label>
+        <input type="number" id="prod-price" placeholder="e.g. 3.00 or 20.00" step="0.01" min="0">
         
-        <label><b>Product Photo:</b></label>
+        <label>Special "3 for £X" Bundle Deal:</label>
+        <select id="prod-deal">
+            <option value="none">No Deal (Standard item)</option>
+            <option value="stickers3for8">⭐ 3 for £8 Deal (Stickers/Pins)</option>
+            <option value="deal3for10">⭐ 3 for £10 Deal</option>
+            <option value="deal3for12">⭐ 3 for £12 Deal</option>
+            <option value="deal3for15">⭐ 3 for £15 Deal</option>
+            <option value="deal3for20">⭐ 3 for £20 Deal</option>
+            <option value="deal3for25">⭐ 3 for £25 Deal</option>
+        </select>
+
+        <div style="margin-bottom: 12px;">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                <input type="checkbox" id="prod-has-sizes" style="width:auto; margin:0;" onchange="toggleSizeFields()">
+                <span>This product has Shirt Sizes (S, M, L, XL, 2XL)</span>
+            </label>
+        </div>
+
+        <!-- Single Stock Input -->
+        <div id="single-stock-wrap">
+            <label>Stock Quantity:</label>
+            <input type="number" id="prod-stock" placeholder="e.g. 25" min="0">
+        </div>
+
+        <!-- Shirt Sizes Matrix -->
+        <div id="sizes-stock-wrap" class="sizes-box" style="display:none;">
+            <label>Stock per Size:</label>
+            <div class="size-inputs">
+                <div class="size-col"><small>S</small><input type="number" id="size-s" value="0" min="0"></div>
+                <div class="size-col"><small>M</small><input type="number" id="size-m" value="0" min="0"></div>
+                <div class="size-col"><small>L</small><input type="number" id="size-l" value="0" min="0"></div>
+                <div class="size-col"><small>XL</small><input type="number" id="size-xl" value="0" min="0"></div>
+                <div class="size-col"><small>2XL</small><input type="number" id="size-2xl" value="0" min="0"></div>
+            </div>
+        </div>
+        
+        <label>Product Photo (optional):</label>
         <input type="file" id="prod-img" accept="image/*">
         
-        <button class="btn-submit" onclick="saveProduct()">Save Product</button>
+        <div id="remove-img-wrap" style="display:none; margin-bottom: 12px;">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--danger);">
+                <input type="checkbox" id="prod-remove-img" style="width:auto; margin:0;">
+                <span>Remove current photo</span>
+            </label>
+        </div>
+        
+        <button class="btn-submit" id="save-btn" onclick="saveProduct()">Save Product</button>
+        <button class="btn-cancel" id="cancel-edit-btn" style="display:none;" onclick="cancelEdit()">Cancel Edit</button>
     </div>
 
     <div class="card">
-        <h3>Current Inventory</h3>
+        <h3 style="margin-top:0; color:var(--secondary);">Current Inventory</h3>
         <div id="inv-list"></div>
     </div>
 </div>
@@ -110,24 +352,32 @@
 <!-- SALES & DATA VIEW -->
 <div id="sales-view" class="view">
     <div class="card">
-        <h3 style="margin-top:0;">Convention Summary</h3>
-        <p style="font-size:1.3rem; font-weight:bold; color:var(--primary);" id="total-rev">Total Revenue: £0.00</p>
-        <p id="total-split">Cash: £0.00 | Card: £0.00</p>
-        <button class="btn-submit" style="background:var(--secondary); margin-bottom: 10px;" onclick="exportCSV()">📥 Copy Sales Data (CSV)</button>
-        <button class="btn-submit" style="background:#f44336;" onclick="resetSales()">🗑️ Reset Sales History</button>
+        <h3 style="margin-top:0; color:var(--secondary);">Convention Summary</h3>
+        <p style="font-size:1.4rem; font-weight:900; color:var(--primary);" id="total-rev">Total Revenue: £0.00</p>
+        <p id="total-split" style="color:var(--text-dim);">Cash: £0.00 | Card: £0.00</p>
+        <button class="btn-submit" style="background:var(--secondary); color:#12101a; margin-bottom: 10px;" onclick="exportCSV()">📥 Copy Sales Data (CSV)</button>
+        <button class="btn-submit" style="background:var(--danger);" onclick="resetSales()">🗑️ Reset Sales History</button>
     </div>
 
     <div class="card">
-        <h3 style="margin-top:0;">Data Backup & Transfer</h3>
-        <p style="font-size:0.85rem; color:#666;">Keep a copy on your phone or send your catalog to another device:</p>
+        <h3 style="margin-top:0; color:var(--secondary);">Data Backup & Restore</h3>
         <button class="btn-submit" style="background:#00897b; margin-bottom:10px;" onclick="downloadBackup()">💾 Download Full Backup (JSON)</button>
         <input type="file" id="backup-file" accept=".json" style="display:none;" onchange="restoreBackup(event)">
-        <button class="btn-submit" style="background:#546e7a;" onclick="document.getElementById('backup-file').click()">📂 Restore from Backup</button>
+        <button class="btn-submit" style="background:#546e7a;" onclick="document.getElementById('backup-file').click()">📂 Restore Backup</button>
     </div>
 
     <div class="card">
-        <h3>Recent Transactions</h3>
+        <h3 style="margin-top:0; color:var(--secondary);">Recent Transactions</h3>
         <div id="sales-list"></div>
+    </div>
+</div>
+
+<!-- MODAL: SIZE PICKER -->
+<div id="size-modal" class="modal-overlay" onclick="if(event.target===this) closeSizeModal()">
+    <div class="modal">
+        <h3 id="modal-shirt-title" style="margin-top:0; color:var(--secondary);">Select Size</h3>
+        <div class="size-btns" id="size-picker-buttons"></div>
+        <button class="btn-cancel" onclick="closeSizeModal()">Cancel</button>
     </div>
 </div>
 
@@ -138,22 +388,36 @@
 </nav>
 
 <script>
-    let currency = '£'; // Change to '$' or '€' if needed!
+    const currency = '£';
+    const SIZE_ORDER = ['S', 'M', 'L', 'XL', '2XL'];
+
+    // Deal configuration map (keeps 'stickers3for8' for backwards compatibility with existing storage)
+    const DEAL_CONFIG = {
+        'stickers3for8': { qty: 3, bundlePrice: 8.00, label: '3 for £8' },
+        'deal3for10':    { qty: 3, bundlePrice: 10.00, label: '3 for £10' },
+        'deal3for12':    { qty: 3, bundlePrice: 12.00, label: '3 for £12' },
+        'deal3for15':    { qty: 3, bundlePrice: 15.00, label: '3 for £15' },
+        'deal3for20':    { qty: 3, bundlePrice: 20.00, label: '3 for £20' },
+        'deal3for25':    { qty: 3, bundlePrice: 25.00, label: '3 for £25' }
+    };
+
     let products = JSON.parse(localStorage.getItem('mlp_products')) || [
-        { id: 1, name: "Pony Plushie", price: 25.00, stock: 10, image: "" },
-        { id: 2, name: "Enamel Pin", price: 10.00, stock: 30, image: "" },
-        { id: 3, name: "Sticker Sheet", price: 4.00, stock: 50, image: "" },
-        { id: 4, name: "A3 Poster Print", price: 12.00, stock: 20, image: "" }
+        { id: 1, name: "Twilight Sparkle Pin", price: 3.00, stock: 15, deal: "stickers3for8", hasSizes: false, sizes: null, image: "" },
+        { id: 2, name: "Rainbow Dash Sticker", price: 3.00, stock: 20, deal: "stickers3for8", hasSizes: false, sizes: null, image: "" },
+        { id: 3, name: "Derpy Hooves Sticker", price: 3.00, stock: 12, deal: "stickers3for8", hasSizes: false, sizes: null, image: "" },
+        { id: 4, name: "Mane 6 Con T-Shirt", price: 20.00, stock: 0, deal: "none", hasSizes: true, sizes: { 'S': 3, 'M': 5, 'L': 4, 'XL': 2, '2XL': 1 }, image: "" }
     ];
     let sales = JSON.parse(localStorage.getItem('mlp_sales')) || [];
-    let cart = {};
+    let cart = {}; // key: "prodId" or "prodId___SIZE"
+    let editingProductId = null;
+    let pendingShirtProduct = null;
 
     function saveData() {
         try {
             localStorage.setItem('mlp_products', JSON.stringify(products));
             localStorage.setItem('mlp_sales', JSON.stringify(sales));
         } catch (e) {
-            alert("Storage limit reached! Please try using smaller images or delete old sales.");
+            alert("⚠️ Local storage is full! Please download a backup, or use smaller product images.");
         }
     }
 
@@ -165,11 +429,62 @@
         renderAll();
     }
 
+    function toggleSizeFields() {
+        const hasSizes = document.getElementById('prod-has-sizes').checked;
+        document.getElementById('single-stock-wrap').style.display = hasSizes ? 'none' : 'block';
+        document.getElementById('sizes-stock-wrap').style.display = hasSizes ? 'block' : 'none';
+    }
+
+    // Cleans up any invalid or over-limit cart entries after inventory edits/deletions
+    function sanitizeCart() {
+        for (let cartKey in cart) {
+            const [prodId, size] = cartKey.split('___');
+            const p = products.find(x => x.id == prodId);
+            if (!p) {
+                delete cart[cartKey];
+                continue;
+            }
+            if (p.hasSizes) {
+                if (!size || !p.sizes || p.sizes[size] === undefined) {
+                    delete cart[cartKey];
+                } else if (cart[cartKey] > p.sizes[size]) {
+                    cart[cartKey] = p.sizes[size];
+                    if (cart[cartKey] <= 0) delete cart[cartKey];
+                }
+            } else {
+                if (size) {
+                    delete cart[cartKey];
+                } else if (cart[cartKey] > p.stock) {
+                    cart[cartKey] = p.stock;
+                    if (cart[cartKey] <= 0) delete cart[cartKey];
+                }
+            }
+        }
+    }
+
     function renderAll() {
+        sanitizeCart();
         renderGrid();
         renderCart();
         renderInventory();
         renderSales();
+    }
+
+    function getProductAvailableStock(p) {
+        if (!p.hasSizes || !p.sizes) return p.stock || 0;
+        let sum = 0;
+        for (let s of SIZE_ORDER) sum += (p.sizes[s] || 0);
+        return sum;
+    }
+
+    function getMaxStockForCartKey(cartKey) {
+        const [prodId, size] = cartKey.split('___');
+        const p = products.find(x => x.id == prodId);
+        if (!p) return 0;
+        if (p.hasSizes && size && p.sizes) {
+            return p.sizes[size] || 0;
+        }
+        return p.stock || 0;
     }
 
     function renderGrid() {
@@ -180,44 +495,120 @@
         const filtered = products.filter(p => p.name.toLowerCase().includes(query));
 
         if (filtered.length === 0) {
-            grid.innerHTML = '<div style="grid-column: span 2; text-align:center; color:#888; padding:20px;">No items match your search.</div>';
+            grid.innerHTML = '<div style="grid-column: span 2; text-align:center; color:var(--text-dim); padding:20px;">No items found.</div>';
             return;
         }
 
         filtered.forEach(p => {
-            const inCart = cart[p.id] || 0;
-            const left = p.stock - inCart;
+            const totalStock = getProductAvailableStock(p);
+            let inCartTotal = 0;
+            if (p.hasSizes && p.sizes) {
+                for (let s of SIZE_ORDER) {
+                    inCartTotal += (cart[`${p.id}___${s}`] || 0);
+                }
+            } else {
+                inCartTotal = cart[p.id] || 0;
+            }
+
+            const left = totalStock - inCartTotal;
             const btn = document.createElement('div');
             btn.className = 'prod-btn ' + (left <= 0 ? 'out-of-stock' : '');
-            btn.onclick = () => addToCart(p.id);
+            btn.onclick = () => handleProductClick(p.id);
 
-            const imgHtml = p.image 
-                ? `<img src="${p.image}" class="prod-img">` 
-                : `<span>🦄</span>`;
+            const imgHtml = p.image ? `<img src="${p.image}" class="prod-img">` : `<span>🦄</span>`;
+            const dealObj = DEAL_CONFIG[p.deal];
+            const dealBadge = dealObj ? `<div class="badge-deal">${dealObj.label}</div>` : '';
+
+            // Build size breakdown preview for shirts
+            let stockText = left > 0 ? `${left} left` : 'SOLD OUT';
+            if (p.hasSizes && p.sizes && left > 0) {
+                const availSizes = SIZE_ORDER.filter(s => ((p.sizes[s] || 0) - (cart[`${p.id}___${s}`] || 0)) > 0);
+                stockText = `${left} left (${availSizes.join(', ')})`;
+            }
 
             btn.innerHTML = `
+                ${dealBadge}
                 <div class="prod-img-wrap">${imgHtml}</div>
                 <div class="prod-name">${p.name}</div>
                 <div class="prod-price">${currency}${p.price.toFixed(2)}</div>
-                <div class="prod-stock">${left > 0 ? left + ' left' : 'SOLD OUT'}</div>
+                <div class="prod-stock">${stockText}</div>
             `;
             grid.appendChild(btn);
         });
     }
 
-    function addToCart(id) {
+    function handleProductClick(id) {
         const p = products.find(x => x.id === id);
-        const currentQty = cart[id] || 0;
-        if (currentQty < p.stock) {
-            cart[id] = currentQty + 1;
+        if (!p) return;
+
+        if (p.hasSizes) {
+            openSizeModal(p);
+        } else {
+            const currentQty = cart[p.id] || 0;
+            if (currentQty < p.stock) {
+                cart[p.id] = currentQty + 1;
+                renderAll();
+            }
+        }
+    }
+
+    /* Size Modal Handling */
+    function openSizeModal(p) {
+        pendingShirtProduct = p;
+        document.getElementById('modal-shirt-title').innerText = p.name;
+        const container = document.getElementById('size-picker-buttons');
+        container.innerHTML = '';
+
+        SIZE_ORDER.forEach(size => {
+            const stock = (p.sizes && p.sizes[size]) || 0;
+            const inCart = cart[`${p.id}___${size}`] || 0;
+            const left = stock - inCart;
+
+            const btn = document.createElement('button');
+            btn.className = 'size-pick-btn ' + (left <= 0 ? 'out' : '');
+            btn.innerHTML = `${size}<br><small style="font-size:0.75rem;">${left > 0 ? left + ' left' : 'OUT'}</small>`;
+            btn.onclick = () => selectShirtSize(size);
+            container.appendChild(btn);
+        });
+
+        document.getElementById('size-modal').style.display = 'flex';
+    }
+
+    function closeSizeModal() {
+        document.getElementById('size-modal').style.display = 'none';
+        pendingShirtProduct = null;
+    }
+
+    function selectShirtSize(size) {
+        if (!pendingShirtProduct) return;
+        const p = pendingShirtProduct;
+        const cartKey = `${p.id}___${size}`;
+        const currentQty = cart[cartKey] || 0;
+        const maxStock = (p.sizes && p.sizes[size]) || 0;
+
+        if (currentQty < maxStock) {
+            cart[cartKey] = currentQty + 1;
+            closeSizeModal();
             renderAll();
         }
     }
 
-    function changeCartQty(id, delta) {
-        if (!cart[id]) return;
-        cart[id] += delta;
-        if (cart[id] <= 0) delete cart[id];
+    // Fixed: Now enforces stock limits when pressing '+' in the cart
+    function changeCartQty(cartKey, delta) {
+        if (!cart[cartKey]) return;
+        const maxStock = getMaxStockForCartKey(cartKey);
+        const newQty = cart[cartKey] + delta;
+
+        if (delta > 0 && newQty > maxStock) {
+            alert(`Only ${maxStock} available in stock!`);
+            return;
+        }
+
+        if (newQty <= 0) {
+            delete cart[cartKey];
+        } else {
+            cart[cartKey] = newQty;
+        }
         renderAll();
     }
 
@@ -226,69 +617,162 @@
         renderAll();
     }
 
+    /* Cart Calculation with Multi-Deal "3 for £X" Support & Mixed Price Protection */
+    function calculateTotals() {
+        let subtotal = 0;
+        let dealBuckets = {}; // key: dealKey -> array of individual unit prices
+
+        for (let cartKey in cart) {
+            const qty = cart[cartKey];
+            const [prodId] = cartKey.split('___');
+            const p = products.find(x => x.id == prodId);
+            if (!p) continue;
+
+            subtotal += p.price * qty;
+
+            if (p.deal && DEAL_CONFIG[p.deal]) {
+                if (!dealBuckets[p.deal]) dealBuckets[p.deal] = [];
+                for (let i = 0; i < qty; i++) {
+                    dealBuckets[p.deal].push(p.price);
+                }
+            }
+        }
+
+        let totalDiscount = 0;
+        let appliedDealsText = [];
+
+        for (let dealKey in dealBuckets) {
+            const config = DEAL_CONFIG[dealKey];
+            const prices = dealBuckets[dealKey];
+            // Sort descending so highest priced eligible items group together fairly
+            prices.sort((a, b) => b - a);
+
+            const bundles = Math.floor(prices.length / config.qty);
+            if (bundles > 0) {
+                let dealDiscount = 0;
+                for (let b = 0; b < bundles; b++) {
+                    let groupSum = 0;
+                    for (let i = 0; i < config.qty; i++) {
+                        groupSum += prices[b * config.qty + i];
+                    }
+                    const saved = Math.max(0, groupSum - config.bundlePrice);
+                    dealDiscount += saved;
+                }
+                if (dealDiscount > 0) {
+                    totalDiscount += dealDiscount;
+                    appliedDealsText.push(`🎉 ${config.label} (${bundles}x): -${currency}${dealDiscount.toFixed(2)}`);
+                }
+            }
+        }
+
+        const finalTotal = Math.max(0, subtotal - totalDiscount);
+        return { subtotal, totalDiscount, finalTotal, appliedDealsText };
+    }
+
     function renderCart() {
         const container = document.getElementById('cart-items');
+        const discountEl = document.getElementById('cart-discount');
         const totalEl = document.getElementById('cart-total');
         container.innerHTML = '';
-        let total = 0;
 
-        const ids = Object.keys(cart);
-        if (ids.length === 0) {
-            container.innerHTML = '<p style="color:#888; text-align:center;">Tap items above to add to sale.</p>';
+        const keys = Object.keys(cart);
+        if (keys.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-dim); text-align:center;">Cart is empty. Tap items to add.</p>';
+            discountEl.style.display = 'none';
             totalEl.innerText = `Total: ${currency}0.00`;
             return;
         }
 
-        ids.forEach(id => {
-            const p = products.find(x => x.id == id);
-            const qty = cart[id];
-            const sub = p.price * qty;
-            total += sub;
+        keys.forEach(cartKey => {
+            const [prodId, size] = cartKey.split('___');
+            const p = products.find(x => x.id == prodId);
+            if (!p) return;
+
+            const qty = cart[cartKey];
+            const maxStock = getMaxStockForCartKey(cartKey);
+            const label = size ? `${p.name} (${size})` : p.name;
+            const lineSub = p.price * qty;
+            const dealTag = DEAL_CONFIG[p.deal] ? ` <small style="color:var(--primary);">[${DEAL_CONFIG[p.deal].label}]</small>` : '';
+
             container.innerHTML += `
                 <div class="cart-item">
-                    <span><b>${qty}x</b> ${p.name} (${currency}${sub.toFixed(2)})</span>
+                    <div>
+                        <b>${qty}x</b> ${label}${dealTag}<br>
+                        <small style="color:var(--text-dim);">${currency}${lineSub.toFixed(2)}</small>
+                    </div>
                     <div class="cart-controls">
-                        <button onclick="changeCartQty(${p.id}, -1)">-</button>
-                        <button onclick="changeCartQty(${p.id}, 1)">+</button>
+                        <button onclick="changeCartQty('${cartKey}', -1)">-</button>
+                        <button onclick="changeCartQty('${cartKey}', 1)" ${qty >= maxStock ? 'disabled' : ''}>+</button>
                     </div>
                 </div>
             `;
         });
-        totalEl.innerText = `Total: ${currency}${total.toFixed(2)}`;
-    }
 
-    function checkout(method) {
-        const ids = Object.keys(cart);
-        if (ids.length === 0) return alert("Cart is empty!");
-
-        let total = 0;
-        let itemsSummary = [];
-        ids.forEach(id => {
-            const p = products.find(x => x.id == id);
-            total += p.price * cart[id];
-            itemsSummary.push(`${cart[id]}x ${p.name}`);
-        });
-
-        if (method === 'Cash') {
-            const tendered = prompt(`Total is ${currency}${total.toFixed(2)}.\nEnter cash given by customer:`, total.toFixed(2));
-            if (tendered === null) return;
-            const cashNum = parseFloat(tendered);
-            if (isNaN(cashNum) || cashNum < total) return alert("Not enough cash!");
-            const change = cashNum - total;
-            alert(`Give Change: ${currency}${change.toFixed(2)}`);
+        const totals = calculateTotals();
+        if (totals.totalDiscount > 0) {
+            discountEl.style.display = 'block';
+            discountEl.innerHTML = totals.appliedDealsText.join('<br>');
+        } else {
+            discountEl.style.display = 'none';
         }
 
-        // Deduct stock
-        ids.forEach(id => {
-            const p = products.find(x => x.id == id);
-            p.stock -= cart[id];
+        totalEl.innerText = `Total: ${currency}${totals.finalTotal.toFixed(2)}`;
+    }
+
+    // Fixed: Validates cash payment BEFORE deducting stock, and stores lineItems for automatic stock restoration on Void
+    function checkout(method) {
+        const keys = Object.keys(cart);
+        if (keys.length === 0) return alert("Cart is empty!");
+
+        const totals = calculateTotals();
+
+        // 1. Verify payment FIRST before touching stock
+        if (method === 'Cash') {
+            const tendered = prompt(`Total is ${currency}${totals.finalTotal.toFixed(2)}.\nEnter cash given by customer:`, totals.finalTotal.toFixed(2));
+            if (tendered === null) return; // Cancelled checkout - stock remains untouched!
+            const cashNum = parseFloat(tendered);
+            if (isNaN(cashNum) || cashNum + 0.001 < totals.finalTotal) {
+                return alert("Cash given is less than the total!");
+            }
+            const change = Math.max(0, cashNum - totals.finalTotal);
+            alert(`✅ Sale Complete!\nGive Change: ${currency}${change.toFixed(2)}`);
+        }
+
+        // 2. Now deduct stock and record line items
+        let itemsSummary = [];
+        let soldLineItems = [];
+
+        keys.forEach(cartKey => {
+            const [prodId, size] = cartKey.split('___');
+            const p = products.find(x => x.id == prodId);
+            if (!p) return;
+
+            const qty = cart[cartKey];
+            const label = size ? `${p.name} [${size}]` : p.name;
+            itemsSummary.push(`${qty}x ${label}`);
+
+            soldLineItems.push({
+                prodId: p.id,
+                size: size || null,
+                qty: qty
+            });
+
+            if (size && p.hasSizes && p.sizes) {
+                p.sizes[size] = Math.max(0, (p.sizes[size] || 0) - qty);
+            } else {
+                p.stock = Math.max(0, (p.stock || 0) - qty);
+            }
         });
 
-        // Save sale
+        if (totals.totalDiscount > 0) {
+            itemsSummary.push(`(Deal Discount: -${currency}${totals.totalDiscount.toFixed(2)})`);
+        }
+
         sales.unshift({
             time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
             items: itemsSummary.join(', '),
-            total: total,
+            lineItems: soldLineItems,
+            total: totals.finalTotal,
             method: method
         });
 
@@ -297,15 +781,14 @@
         renderAll();
     }
 
-    // Compress phone camera images down so localStorage won't run out of memory!
     function processImageFile(file, callback) {
-        if (!file) return callback("");
+        if (!file) return callback(null);
         const reader = new FileReader();
         reader.onload = function(e) {
             const img = new Image();
             img.onload = function() {
                 const canvas = document.createElement('canvas');
-                const maxDim = 200; // 200px thumbnail is ideal for fast POS
+                const maxDim = 200;
                 let width = img.width;
                 let height = img.height;
 
@@ -325,7 +808,6 @@
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                // Compressed JPEG thumbnail
                 callback(canvas.toDataURL('image/jpeg', 0.7));
             };
             img.src = e.target.result;
@@ -336,43 +818,122 @@
     function saveProduct() {
         const name = document.getElementById('prod-name').value.trim();
         const price = parseFloat(document.getElementById('prod-price').value);
-        const stock = parseInt(document.getElementById('prod-stock').value);
+        const deal = document.getElementById('prod-deal').value;
+        const hasSizes = document.getElementById('prod-has-sizes').checked;
+        const removeImg = document.getElementById('prod-remove-img').checked;
         const fileInput = document.getElementById('prod-img');
 
-        if (!name || isNaN(price) || isNaN(stock)) return alert("Please fill in Name, Price, and Stock!");
+        if (!name || isNaN(price) || price < 0) return alert("Please enter a valid Name and Price!");
 
-        processImageFile(fileInput.files[0], function(compressedImage) {
-            products.push({
-                id: Date.now(),
-                name: name,
-                price: price,
-                stock: stock,
-                image: compressedImage
-            });
+        let stock = 0;
+        let sizes = null;
 
-            document.getElementById('prod-name').value = '';
-            document.getElementById('prod-price').value = '';
-            document.getElementById('prod-stock').value = '';
-            fileInput.value = '';
+        if (hasSizes) {
+            sizes = {
+                'S': Math.max(0, parseInt(document.getElementById('size-s').value) || 0),
+                'M': Math.max(0, parseInt(document.getElementById('size-m').value) || 0),
+                'L': Math.max(0, parseInt(document.getElementById('size-l').value) || 0),
+                'XL': Math.max(0, parseInt(document.getElementById('size-xl').value) || 0),
+                '2XL': Math.max(0, parseInt(document.getElementById('size-2xl').value) || 0),
+            };
+        } else {
+            stock = Math.max(0, parseInt(document.getElementById('prod-stock').value) || 0);
+        }
 
+        processImageFile(fileInput.files[0], function(newImageData) {
+            if (editingProductId) {
+                const p = products.find(x => x.id === editingProductId);
+                if (p) {
+                    p.name = name;
+                    p.price = price;
+                    p.deal = deal;
+                    p.hasSizes = hasSizes;
+                    p.stock = stock;
+                    p.sizes = sizes;
+                    if (newImageData) {
+                        p.image = newImageData;
+                    } else if (removeImg) {
+                        p.image = "";
+                    }
+                }
+                editingProductId = null;
+                alert("Product updated successfully!");
+            } else {
+                products.push({
+                    id: Date.now(),
+                    name,
+                    price,
+                    deal,
+                    hasSizes,
+                    stock,
+                    sizes,
+                    image: newImageData || ""
+                });
+                alert("Product added!");
+            }
+
+            cancelEdit();
             saveData();
             renderAll();
-            alert("Product added!");
         });
     }
 
-    function editStock(id) {
+    function startEditProduct(id) {
         const p = products.find(x => x.id === id);
-        const newStock = prompt(`Update stock quantity for ${p.name}:`, p.stock);
-        if (newStock !== null && !isNaN(parseInt(newStock))) {
-            p.stock = parseInt(newStock);
-            saveData();
-            renderAll();
+        if (!p) return;
+
+        editingProductId = id;
+        document.getElementById('form-title').innerText = `Edit: ${p.name}`;
+        document.getElementById('save-btn').innerText = "Update Product";
+        document.getElementById('cancel-edit-btn').style.display = "block";
+        document.getElementById('remove-img-wrap').style.display = p.image ? "block" : "none";
+        document.getElementById('prod-remove-img').checked = false;
+
+        document.getElementById('prod-name').value = p.name;
+        document.getElementById('prod-price').value = p.price;
+        document.getElementById('prod-deal').value = p.deal || 'none';
+        document.getElementById('prod-has-sizes').checked = !!p.hasSizes;
+
+        toggleSizeFields();
+
+        if (p.hasSizes && p.sizes) {
+            document.getElementById('size-s').value = p.sizes['S'] || 0;
+            document.getElementById('size-m').value = p.sizes['M'] || 0;
+            document.getElementById('size-l').value = p.sizes['L'] || 0;
+            document.getElementById('size-xl').value = p.sizes['XL'] || 0;
+            document.getElementById('size-2xl').value = p.sizes['2XL'] || 0;
+        } else {
+            document.getElementById('prod-stock').value = p.stock || 0;
         }
+
+        document.getElementById('product-form-card').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelEdit() {
+        editingProductId = null;
+        document.getElementById('form-title').innerText = "Add New Product";
+        document.getElementById('save-btn').innerText = "Save Product";
+        document.getElementById('cancel-edit-btn').style.display = "none";
+        document.getElementById('remove-img-wrap').style.display = "none";
+        document.getElementById('prod-remove-img').checked = false;
+
+        document.getElementById('prod-name').value = '';
+        document.getElementById('prod-price').value = '';
+        document.getElementById('prod-deal').value = 'none';
+        document.getElementById('prod-stock').value = '';
+        document.getElementById('prod-has-sizes').checked = false;
+        document.getElementById('prod-img').value = '';
+        document.getElementById('size-s').value = 0;
+        document.getElementById('size-m').value = 0;
+        document.getElementById('size-l').value = 0;
+        document.getElementById('size-xl').value = 0;
+        document.getElementById('size-2xl').value = 0;
+        toggleSizeFields();
     }
 
     function deleteProduct(id) {
         if (confirm("Delete this product?")) {
+            if (editingProductId === id) cancelEdit();
             products = products.filter(x => x.id !== id);
             saveData();
             renderAll();
@@ -384,17 +945,27 @@
         list.innerHTML = '';
         products.forEach(p => {
             const thumb = p.image ? `<img src="${p.image}" class="inv-thumb">` : `<div class="inv-thumb" style="display:flex;align-items:center;justify-content:center;">🦄</div>`;
+            
+            let stockDetails = `Stock: ${p.stock}`;
+            if (p.hasSizes && p.sizes) {
+                stockDetails = `Sizes: S(${p.sizes['S']||0}) M(${p.sizes['M']||0}) L(${p.sizes['L']||0}) XL(${p.sizes['XL']||0}) 2XL(${p.sizes['2XL']||0})`;
+            }
+
+            const dealObj = DEAL_CONFIG[p.deal];
+            const dealText = dealObj ? `<br><small style="color:var(--primary); font-weight:bold;">⭐ ${dealObj.label} Deal</small>` : '';
+
             list.innerHTML += `
                 <div class="inv-item">
                     <div style="display:flex; align-items:center;">
                         ${thumb}
                         <div>
                             <b>${p.name}</b> (${currency}${p.price.toFixed(2)})<br>
-                            <small style="color:#666;">Stock: ${p.stock}</small>
+                            <small style="color:var(--text-dim);">${stockDetails}</small>
+                            ${dealText}
                         </div>
                     </div>
-                    <div>
-                        <button class="del-btn" style="background:var(--secondary); margin-right:5px;" onclick="editStock(${p.id})">Stock</button>
+                    <div style="flex-shrink:0;">
+                        <button class="edit-btn" onclick="startEditProduct(${p.id})">Edit</button>
                         <button class="del-btn" onclick="deleteProduct(${p.id})">X</button>
                     </div>
                 </div>
@@ -415,8 +986,8 @@
             list.innerHTML += `
                 <div class="inv-item">
                     <div>
-                        <b>${currency}${s.total.toFixed(2)}</b> (${s.method}) - <small>${s.time}</small><br>
-                        <small style="color:#666;">${s.items}</small>
+                        <b>${currency}${s.total.toFixed(2)}</b> (${s.method}) - <small style="color:var(--text-dim);">${s.time}</small><br>
+                        <small style="color:var(--text-dim);">${s.items}</small>
                     </div>
                     <button class="del-btn" onclick="refundSale(${idx})">Void</button>
                 </div>
@@ -427,8 +998,29 @@
         document.getElementById('total-split').innerText = `Cash: ${currency}${cash.toFixed(2)} | Card: ${currency}${card.toFixed(2)}`;
     }
 
+    // Upgraded: Automatically restores stock if the sale has lineItems recorded
     function refundSale(index) {
-        if (confirm("Void this sale? (Note: Adjust stock manually in Inventory)")) {
+        const sale = sales[index];
+        if (!sale) return;
+
+        const hasLineItems = Array.isArray(sale.lineItems) && sale.lineItems.length > 0;
+        const msg = hasLineItems
+            ? "Void this sale and automatically restore items back to inventory?"
+            : "Void this sale? (Legacy sale record: adjust stock manually in Inventory if needed)";
+
+        if (confirm(msg)) {
+            if (hasLineItems) {
+                sale.lineItems.forEach(item => {
+                    const p = products.find(x => x.id == item.prodId);
+                    if (p) {
+                        if (item.size && p.hasSizes && p.sizes) {
+                            p.sizes[item.size] = (p.sizes[item.size] || 0) + item.qty;
+                        } else {
+                            p.stock = (p.stock || 0) + item.qty;
+                        }
+                    }
+                });
+            }
             sales.splice(index, 1);
             saveData();
             renderAll();
@@ -446,7 +1038,8 @@
     function exportCSV() {
         let csv = "Time,Method,Total,Items\n";
         sales.forEach(s => {
-            csv += `"${s.time}","${s.method}","${s.total.toFixed(2)}","${s.items}"\n`;
+            const safeItems = (s.items || '').replace(/"/g, '""');
+            csv += `"${s.time}","${s.method}","${s.total.toFixed(2)}","${safeItems}"\n`;
         });
         navigator.clipboard.writeText(csv).then(() => {
             alert("Sales data copied to clipboard! Paste it into Notes or Google Sheets.");
@@ -455,13 +1048,8 @@
         });
     }
 
-    // Complete Backup & Restore (JSON)
     function downloadBackup() {
-        const backupData = {
-            products: products,
-            sales: sales,
-            date: new Date().toISOString()
-        };
+        const backupData = { products, sales, date: new Date().toISOString() };
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -477,19 +1065,21 @@
             try {
                 const data = JSON.parse(event.target.result);
                 if (data.products && Array.isArray(data.products)) {
-                    if (confirm("This will replace current inventory and sales with the backup. Continue?")) {
+                    if (confirm("This will replace current inventory and sales with the backup file. Continue?")) {
                         products = data.products;
                         sales = data.sales || [];
+                        cart = {};
                         saveData();
                         renderAll();
                         alert("Backup restored successfully!");
                     }
                 } else {
-                    alert("Invalid backup file format!");
+                    alert("Invalid backup file format.");
                 }
             } catch (err) {
-                alert("Error reading file: " + err);
+                alert("Error loading backup: " + err);
             }
+            e.target.value = ''; // Reset input so same file can be selected again if needed
         };
         reader.readAsText(file);
     }
