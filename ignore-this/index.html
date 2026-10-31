@@ -18,6 +18,7 @@
             --input-bg: #272239;
             --success: #00e676;
             --danger: #ff5252;
+            --warning: #ffd740;
         }
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { margin: 0; padding: 0; background-color: var(--bg); color: var(--text); padding-bottom: 90px; }
@@ -110,6 +111,18 @@
             font-weight: bold;
             box-shadow: 0 2px 5px rgba(0,0,0,0.4);
         }
+        .badge-custom {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background: var(--accent);
+            color: white;
+            font-size: 0.65rem;
+            padding: 3px 6px;
+            border-radius: 10px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+        }
 
         .prod-img-wrap { 
             width: 100%; 
@@ -156,6 +169,25 @@
         }
         .cart-discount { color: var(--success); font-size: 0.9rem; font-weight: bold; text-align: right; margin-top: 8px; line-height: 1.4; }
         .cart-total { font-size: 1.5rem; font-weight: 900; text-align: right; margin: 12px 0; color: var(--primary); }
+        
+        /* Commission / Note Input in Cart */
+        .cart-note-wrap {
+            margin: 12px 0;
+        }
+        .cart-note-input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            background: var(--input-bg);
+            color: var(--text);
+            font-size: 0.95rem;
+            margin: 4px 0 0 0;
+        }
+        .cart-note-input:focus {
+            border-color: var(--warning);
+        }
+
         .pay-btns { display: flex; gap: 10px; }
         .btn-main { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; color: white; cursor: pointer; }
         .btn-cash { background: #2e7d32; }
@@ -211,6 +243,19 @@
         .edit-btn { background: var(--secondary); color: #12101a; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-right: 4px; }
         .inv-thumb { width: 45px; height: 45px; border-radius: 6px; object-fit: cover; margin-right: 10px; background: #272239; flex-shrink: 0; }
 
+        /* Sale Note Badge in History */
+        .sale-note-box {
+            margin-top: 5px;
+            padding: 6px 10px;
+            background: rgba(255, 215, 64, 0.12);
+            border-left: 3px solid var(--warning);
+            border-radius: 4px;
+            color: var(--warning);
+            font-size: 0.85rem;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
         /* Size Matrix Box */
         .sizes-box { 
             background: var(--input-bg); 
@@ -265,7 +310,7 @@
 
 <!-- SELL VIEW -->
 <div id="sell-view" class="view active">
-    <input type="search" id="search-input" class="search-box" placeholder="🔍 Search items, shirts, or charms..." oninput="renderGrid()">
+    <input type="search" id="search-input" class="search-box" placeholder="🔍 Search items, shirts, commissions..." oninput="renderGrid()">
     
     <div id="product-grid" class="product-grid"></div>
     
@@ -273,6 +318,12 @@
         <h3 style="margin-top:0; color:var(--secondary);">Current Sale</h3>
         <div id="cart-items">Cart is empty</div>
         <div id="cart-discount" class="cart-discount" style="display:none;"></div>
+        
+        <div class="cart-note-wrap">
+            <label for="cart-note">📝 Commission / Purchase Info (Optional):</label>
+            <input type="text" id="cart-note" class="cart-note-input" placeholder="e.g. Sketch for @Dashie, OC ref, pickup 3pm...">
+        </div>
+
         <div class="cart-total" id="cart-total">Total: £0.00</div>
         <div class="pay-btns">
             <button class="btn-main btn-cash" onclick="checkout('Cash')">💵 Cash</button>
@@ -288,10 +339,10 @@
         <h3 style="margin-top:0; color:var(--secondary);" id="form-title">Add New Product</h3>
         
         <label>Item Name:</label>
-        <input type="text" id="prod-name" placeholder="e.g. Fluttershy Tee or Vinyl Sticker">
+        <input type="text" id="prod-name" placeholder="e.g. Fluttershy Tee or Custom Commission">
         
-        <label>Single Price (£):</label>
-        <input type="number" id="prod-price" placeholder="e.g. 3.00 or 20.00" step="0.01" min="0">
+        <label>Default Price (£):</label>
+        <input type="number" id="prod-price" placeholder="e.g. 3.00 or 25.00" step="0.01" min="0">
         
         <label>Special "3 for £X" Bundle Deal:</label>
         <select id="prod-deal">
@@ -304,16 +355,23 @@
             <option value="deal3for25">⭐ 3 for £25 Deal</option>
         </select>
 
+        <div style="margin-bottom: 10px;">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--warning);">
+                <input type="checkbox" id="prod-custom-price" style="width:auto; margin:0;">
+                <span>🎨 Commission / Variable Price (Ask for price & details when tapped)</span>
+            </label>
+        </div>
+
         <div style="margin-bottom: 12px;">
             <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                 <input type="checkbox" id="prod-has-sizes" style="width:auto; margin:0;" onchange="toggleSizeFields()">
-                <span>This product has Shirt Sizes (S, M, L, XL, 2XL)</span>
+                <span>👕 This product has Shirt Sizes (S, M, L, XL, 2XL)</span>
             </label>
         </div>
 
         <!-- Single Stock Input -->
         <div id="single-stock-wrap">
-            <label>Stock Quantity:</label>
+            <label>Stock Quantity (or Commission Slots):</label>
             <input type="number" id="prod-stock" placeholder="e.g. 25" min="0">
         </div>
 
@@ -360,10 +418,11 @@
     </div>
 
     <div class="card">
-        <h3 style="margin-top:0; color:var(--secondary);">Data Backup & Restore</h3>
-        <button class="btn-submit" style="background:#00897b; margin-bottom:10px;" onclick="downloadBackup()">💾 Download Full Backup (JSON)</button>
+        <h3 style="margin-top:0; color:var(--secondary);">Phone-to-Phone Backup & Restore</h3>
+        <p style="font-size:0.8rem; color:var(--text-dim); margin-top:0;">Saves all products, photos, sizes, sales & commission notes into one file to move between devices.</p>
+        <button class="btn-submit" style="background:#00897b; margin-bottom:10px;" onclick="downloadBackup()">💾 Export Full Backup (JSON)</button>
         <input type="file" id="backup-file" accept=".json" style="display:none;" onchange="restoreBackup(event)">
-        <button class="btn-submit" style="background:#546e7a;" onclick="document.getElementById('backup-file').click()">📂 Restore Backup</button>
+        <button class="btn-submit" style="background:#546e7a;" onclick="document.getElementById('backup-file').click()">📂 Import / Restore Backup</button>
     </div>
 
     <div class="card">
@@ -391,7 +450,6 @@
     const currency = '£';
     const SIZE_ORDER = ['S', 'M', 'L', 'XL', '2XL'];
 
-    // Deal configuration map (keeps 'stickers3for8' for backwards compatibility with existing storage)
     const DEAL_CONFIG = {
         'stickers3for8': { qty: 3, bundlePrice: 8.00, label: '3 for £8' },
         'deal3for10':    { qty: 3, bundlePrice: 10.00, label: '3 for £10' },
@@ -402,13 +460,20 @@
     };
 
     let products = JSON.parse(localStorage.getItem('mlp_products')) || [
-        { id: 1, name: "Twilight Sparkle Pin", price: 3.00, stock: 15, deal: "stickers3for8", hasSizes: false, sizes: null, image: "" },
-        { id: 2, name: "Rainbow Dash Sticker", price: 3.00, stock: 20, deal: "stickers3for8", hasSizes: false, sizes: null, image: "" },
-        { id: 3, name: "Derpy Hooves Sticker", price: 3.00, stock: 12, deal: "stickers3for8", hasSizes: false, sizes: null, image: "" },
-        { id: 4, name: "Mane 6 Con T-Shirt", price: 20.00, stock: 0, deal: "none", hasSizes: true, sizes: { 'S': 3, 'M': 5, 'L': 4, 'XL': 2, '2XL': 1 }, image: "" }
+        { id: 1, name: "Twilight Sparkle Pin", price: 3.00, stock: 15, deal: "stickers3for8", hasSizes: false, sizes: null, customPrice: false, image: "" },
+        { id: 2, name: "Rainbow Dash Sticker", price: 3.00, stock: 20, deal: "stickers3for8", hasSizes: false, sizes: null, customPrice: false, image: "" },
+        { id: 3, name: "Derpy Hooves Sticker", price: 3.00, stock: 12, deal: "stickers3for8", hasSizes: false, sizes: null, customPrice: false, image: "" },
+        { id: 4, name: "Mane 6 Con T-Shirt", price: 20.00, stock: 0, deal: "none", hasSizes: true, sizes: { 'S': 3, 'M': 5, 'L': 4, 'XL': 2, '2XL': 1 }, customPrice: false, image: "" },
+        { id: 5, name: "🎨 Sketch Commission", price: 25.00, stock: 10, deal: "none", hasSizes: false, sizes: null, customPrice: true, image: "" }
     ];
     let sales = JSON.parse(localStorage.getItem('mlp_sales')) || [];
-    let cart = {}; // key: "prodId" or "prodId___SIZE"
+    
+    // cart keys can be:
+    // "prodId" (standard)
+    // "prodId___SIZE" (sized)
+    // "prodId___CUSTOM___timestamp" (custom priced commission item)
+    let cart = {}; 
+    let customCartMeta = {}; // stores { customUnitPrice, customLabel } for custom-priced cart lines
     let editingProductId = null;
     let pendingShirtProduct = null;
 
@@ -435,24 +500,48 @@
         document.getElementById('sizes-stock-wrap').style.display = hasSizes ? 'block' : 'none';
     }
 
-    // Cleans up any invalid or over-limit cart entries after inventory edits/deletions
+    // Count how many total units of a product (or specific size) are currently in the cart
+    function getInCartCount(prodId, size = null) {
+        let count = 0;
+        for (let key in cart) {
+            const parts = key.split('___');
+            if (parts[0] == prodId) {
+                if (size) {
+                    if (parts[1] === size) count += cart[key];
+                } else {
+                    count += cart[key];
+                }
+            }
+        }
+        return count;
+    }
+
     function sanitizeCart() {
         for (let cartKey in cart) {
-            const [prodId, size] = cartKey.split('___');
+            const parts = cartKey.split('___');
+            const prodId = parts[0];
+            const secondPart = parts[1];
             const p = products.find(x => x.id == prodId);
             if (!p) {
                 delete cart[cartKey];
+                delete customCartMeta[cartKey];
                 continue;
             }
-            if (p.hasSizes) {
-                if (!size || !p.sizes || p.sizes[size] === undefined) {
+            if (secondPart === 'CUSTOM') {
+                // Verify total custom units don't exceed stock
+                if (p.stock <= 0) {
                     delete cart[cartKey];
-                } else if (cart[cartKey] > p.sizes[size]) {
-                    cart[cartKey] = p.sizes[size];
+                    delete customCartMeta[cartKey];
+                }
+            } else if (p.hasSizes) {
+                if (!secondPart || !p.sizes || p.sizes[secondPart] === undefined) {
+                    delete cart[cartKey];
+                } else if (cart[cartKey] > p.sizes[secondPart]) {
+                    cart[cartKey] = p.sizes[secondPart];
                     if (cart[cartKey] <= 0) delete cart[cartKey];
                 }
             } else {
-                if (size) {
+                if (secondPart) {
                     delete cart[cartKey];
                 } else if (cart[cartKey] > p.stock) {
                     cart[cartKey] = p.stock;
@@ -478,11 +567,13 @@
     }
 
     function getMaxStockForCartKey(cartKey) {
-        const [prodId, size] = cartKey.split('___');
+        const parts = cartKey.split('___');
+        const prodId = parts[0];
+        const secondPart = parts[1];
         const p = products.find(x => x.id == prodId);
         if (!p) return 0;
-        if (p.hasSizes && size && p.sizes) {
-            return p.sizes[size] || 0;
+        if (p.hasSizes && secondPart && secondPart !== 'CUSTOM' && p.sizes) {
+            return p.sizes[secondPart] || 0;
         }
         return p.stock || 0;
     }
@@ -501,14 +592,7 @@
 
         filtered.forEach(p => {
             const totalStock = getProductAvailableStock(p);
-            let inCartTotal = 0;
-            if (p.hasSizes && p.sizes) {
-                for (let s of SIZE_ORDER) {
-                    inCartTotal += (cart[`${p.id}___${s}`] || 0);
-                }
-            } else {
-                inCartTotal = cart[p.id] || 0;
-            }
+            const inCartTotal = getInCartCount(p.id);
 
             const left = totalStock - inCartTotal;
             const btn = document.createElement('div');
@@ -518,19 +602,20 @@
             const imgHtml = p.image ? `<img src="${p.image}" class="prod-img">` : `<span>🦄</span>`;
             const dealObj = DEAL_CONFIG[p.deal];
             const dealBadge = dealObj ? `<div class="badge-deal">${dealObj.label}</div>` : '';
+            const customBadge = p.customPrice ? `<div class="badge-custom">Custom £</div>` : '';
 
-            // Build size breakdown preview for shirts
             let stockText = left > 0 ? `${left} left` : 'SOLD OUT';
             if (p.hasSizes && p.sizes && left > 0) {
-                const availSizes = SIZE_ORDER.filter(s => ((p.sizes[s] || 0) - (cart[`${p.id}___${s}`] || 0)) > 0);
+                const availSizes = SIZE_ORDER.filter(s => ((p.sizes[s] || 0) - getInCartCount(p.id, s)) > 0);
                 stockText = `${left} left (${availSizes.join(', ')})`;
             }
 
             btn.innerHTML = `
+                ${customBadge}
                 ${dealBadge}
                 <div class="prod-img-wrap">${imgHtml}</div>
                 <div class="prod-name">${p.name}</div>
-                <div class="prod-price">${currency}${p.price.toFixed(2)}</div>
+                <div class="prod-price">${currency}${p.price.toFixed(2)}${p.customPrice ? '+' : ''}</div>
                 <div class="prod-stock">${stockText}</div>
             `;
             grid.appendChild(btn);
@@ -541,8 +626,37 @@
         const p = products.find(x => x.id === id);
         if (!p) return;
 
+        const totalStock = getProductAvailableStock(p);
+        const inCartTotal = getInCartCount(p.id);
+        if (inCartTotal >= totalStock) return;
+
         if (p.hasSizes) {
             openSizeModal(p);
+        } else if (p.customPrice) {
+            // Prompt for custom commission price & details
+            const enteredPrice = prompt(`Enter price (${currency}) for ${p.name}:`, p.price.toFixed(2));
+            if (enteredPrice === null) return;
+            const numPrice = parseFloat(enteredPrice);
+            if (isNaN(numPrice) || numPrice < 0) return alert("Please enter a valid price!");
+
+            const commDetails = prompt(`Add details for this ${p.name} (Customer name, OC, contact, etc.):\n(Leave blank if none)`, "");
+            if (commDetails === null) return;
+
+            const customKey = `${p.id}___CUSTOM___${Date.now()}`;
+            cart[customKey] = 1;
+            customCartMeta[customKey] = {
+                unitPrice: numPrice,
+                details: commDetails.trim()
+            };
+
+            // Also append to the main cart note box for convenience if provided
+            if (commDetails.trim()) {
+                const noteInput = document.getElementById('cart-note');
+                noteInput.value = noteInput.value 
+                    ? `${noteInput.value} | ${p.name}: ${commDetails.trim()}`
+                    : `${p.name}: ${commDetails.trim()}`;
+            }
+            renderAll();
         } else {
             const currentQty = cart[p.id] || 0;
             if (currentQty < p.stock) {
@@ -561,7 +675,7 @@
 
         SIZE_ORDER.forEach(size => {
             const stock = (p.sizes && p.sizes[size]) || 0;
-            const inCart = cart[`${p.id}___${size}`] || 0;
+            const inCart = getInCartCount(p.id, size);
             const left = stock - inCart;
 
             const btn = document.createElement('button');
@@ -593,19 +707,32 @@
         }
     }
 
-    // Fixed: Now enforces stock limits when pressing '+' in the cart
     function changeCartQty(cartKey, delta) {
         if (!cart[cartKey]) return;
-        const maxStock = getMaxStockForCartKey(cartKey);
-        const newQty = cart[cartKey] + delta;
+        const parts = cartKey.split('___');
+        const prodId = parts[0];
+        const p = products.find(x => x.id == prodId);
+        if (!p) return;
 
-        if (delta > 0 && newQty > maxStock) {
-            alert(`Only ${maxStock} available in stock!`);
-            return;
+        if (delta > 0) {
+            if (parts[1] === 'CUSTOM') {
+                if (getInCartCount(prodId) >= p.stock) {
+                    alert(`Only ${p.stock} available in stock!`);
+                    return;
+                }
+            } else {
+                const maxStock = getMaxStockForCartKey(cartKey);
+                if (cart[cartKey] + delta > maxStock) {
+                    alert(`Only ${maxStock} available in stock!`);
+                    return;
+                }
+            }
         }
 
+        const newQty = cart[cartKey] + delta;
         if (newQty <= 0) {
             delete cart[cartKey];
+            delete customCartMeta[cartKey];
         } else {
             cart[cartKey] = newQty;
         }
@@ -614,13 +741,23 @@
 
     function clearCart() {
         cart = {};
+        customCartMeta = {};
+        const noteEl = document.getElementById('cart-note');
+        if (noteEl) noteEl.value = '';
         renderAll();
     }
 
-    /* Cart Calculation with Multi-Deal "3 for £X" Support & Mixed Price Protection */
+    function getUnitPriceForCartKey(cartKey, p) {
+        if (customCartMeta[cartKey] && customCartMeta[cartKey].unitPrice !== undefined) {
+            return customCartMeta[cartKey].unitPrice;
+        }
+        return p.price;
+    }
+
+    /* Cart Calculation with Multi-Deal "3 for £X" Support */
     function calculateTotals() {
         let subtotal = 0;
-        let dealBuckets = {}; // key: dealKey -> array of individual unit prices
+        let dealBuckets = {};
 
         for (let cartKey in cart) {
             const qty = cart[cartKey];
@@ -628,12 +765,13 @@
             const p = products.find(x => x.id == prodId);
             if (!p) continue;
 
-            subtotal += p.price * qty;
+            const unitPrice = getUnitPriceForCartKey(cartKey, p);
+            subtotal += unitPrice * qty;
 
             if (p.deal && DEAL_CONFIG[p.deal]) {
                 if (!dealBuckets[p.deal]) dealBuckets[p.deal] = [];
                 for (let i = 0; i < qty; i++) {
-                    dealBuckets[p.deal].push(p.price);
+                    dealBuckets[p.deal].push(unitPrice);
                 }
             }
         }
@@ -644,7 +782,6 @@
         for (let dealKey in dealBuckets) {
             const config = DEAL_CONFIG[dealKey];
             const prices = dealBuckets[dealKey];
-            // Sort descending so highest priced eligible items group together fairly
             prices.sort((a, b) => b - a);
 
             const bundles = Math.floor(prices.length / config.qty);
@@ -684,25 +821,45 @@
         }
 
         keys.forEach(cartKey => {
-            const [prodId, size] = cartKey.split('___');
+            const parts = cartKey.split('___');
+            const prodId = parts[0];
+            const secondPart = parts[1];
             const p = products.find(x => x.id == prodId);
             if (!p) return;
 
             const qty = cart[cartKey];
-            const maxStock = getMaxStockForCartKey(cartKey);
-            const label = size ? `${p.name} (${size})` : p.name;
-            const lineSub = p.price * qty;
+            const unitPrice = getUnitPriceForCartKey(cartKey, p);
+            const lineSub = unitPrice * qty;
+
+            let label = p.name;
+            let extraInfo = '';
+            let atMax = false;
+
+            if (secondPart === 'CUSTOM') {
+                const meta = customCartMeta[cartKey];
+                if (meta && meta.details) {
+                    extraInfo = `<br><small style="color:var(--warning);">📝 ${meta.details}</small>`;
+                }
+                atMax = getInCartCount(p.id) >= p.stock;
+            } else if (secondPart) {
+                label = `${p.name} (${secondPart})`;
+                atMax = qty >= getMaxStockForCartKey(cartKey);
+            } else {
+                atMax = qty >= getMaxStockForCartKey(cartKey);
+            }
+
             const dealTag = DEAL_CONFIG[p.deal] ? ` <small style="color:var(--primary);">[${DEAL_CONFIG[p.deal].label}]</small>` : '';
 
             container.innerHTML += `
                 <div class="cart-item">
                     <div>
-                        <b>${qty}x</b> ${label}${dealTag}<br>
+                        <b>${qty}x</b> ${label}${dealTag}
+                        ${extraInfo}<br>
                         <small style="color:var(--text-dim);">${currency}${lineSub.toFixed(2)}</small>
                     </div>
                     <div class="cart-controls">
                         <button onclick="changeCartQty('${cartKey}', -1)">-</button>
-                        <button onclick="changeCartQty('${cartKey}', 1)" ${qty >= maxStock ? 'disabled' : ''}>+</button>
+                        <button onclick="changeCartQty('${cartKey}', 1)" ${atMax ? 'disabled' : ''}>+</button>
                     </div>
                 </div>
             `;
@@ -719,17 +876,17 @@
         totalEl.innerText = `Total: ${currency}${totals.finalTotal.toFixed(2)}`;
     }
 
-    // Fixed: Validates cash payment BEFORE deducting stock, and stores lineItems for automatic stock restoration on Void
     function checkout(method) {
         const keys = Object.keys(cart);
         if (keys.length === 0) return alert("Cart is empty!");
 
         const totals = calculateTotals();
+        const saleNote = (document.getElementById('cart-note')?.value || '').trim();
 
         // 1. Verify payment FIRST before touching stock
         if (method === 'Cash') {
             const tendered = prompt(`Total is ${currency}${totals.finalTotal.toFixed(2)}.\nEnter cash given by customer:`, totals.finalTotal.toFixed(2));
-            if (tendered === null) return; // Cancelled checkout - stock remains untouched!
+            if (tendered === null) return;
             const cashNum = parseFloat(tendered);
             if (isNaN(cashNum) || cashNum + 0.001 < totals.finalTotal) {
                 return alert("Cash given is less than the total!");
@@ -738,27 +895,39 @@
             alert(`✅ Sale Complete!\nGive Change: ${currency}${change.toFixed(2)}`);
         }
 
-        // 2. Now deduct stock and record line items
+        // 2. Deduct stock and record line items
         let itemsSummary = [];
         let soldLineItems = [];
 
         keys.forEach(cartKey => {
-            const [prodId, size] = cartKey.split('___');
+            const parts = cartKey.split('___');
+            const prodId = parts[0];
+            const secondPart = parts[1];
             const p = products.find(x => x.id == prodId);
             if (!p) return;
 
             const qty = cart[cartKey];
-            const label = size ? `${p.name} [${size}]` : p.name;
+            const unitPrice = getUnitPriceForCartKey(cartKey, p);
+            let label = p.name;
+            let sizeUsed = null;
+
+            if (secondPart === 'CUSTOM') {
+                label = `${p.name} (@${currency}${unitPrice.toFixed(2)})`;
+            } else if (secondPart) {
+                label = `${p.name} [${secondPart}]`;
+                sizeUsed = secondPart;
+            }
+
             itemsSummary.push(`${qty}x ${label}`);
 
             soldLineItems.push({
                 prodId: p.id,
-                size: size || null,
+                size: sizeUsed,
                 qty: qty
             });
 
-            if (size && p.hasSizes && p.sizes) {
-                p.sizes[size] = Math.max(0, (p.sizes[size] || 0) - qty);
+            if (sizeUsed && p.hasSizes && p.sizes) {
+                p.sizes[sizeUsed] = Math.max(0, (p.sizes[sizeUsed] || 0) - qty);
             } else {
                 p.stock = Math.max(0, (p.stock || 0) - qty);
             }
@@ -771,12 +940,13 @@
         sales.unshift({
             time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
             items: itemsSummary.join(', '),
+            note: saleNote, // Stores Commission / Purchase Note
             lineItems: soldLineItems,
             total: totals.finalTotal,
             method: method
         });
 
-        cart = {};
+        clearCart();
         saveData();
         renderAll();
     }
@@ -819,6 +989,7 @@
         const name = document.getElementById('prod-name').value.trim();
         const price = parseFloat(document.getElementById('prod-price').value);
         const deal = document.getElementById('prod-deal').value;
+        const customPrice = document.getElementById('prod-custom-price').checked;
         const hasSizes = document.getElementById('prod-has-sizes').checked;
         const removeImg = document.getElementById('prod-remove-img').checked;
         const fileInput = document.getElementById('prod-img');
@@ -847,6 +1018,7 @@
                     p.name = name;
                     p.price = price;
                     p.deal = deal;
+                    p.customPrice = customPrice;
                     p.hasSizes = hasSizes;
                     p.stock = stock;
                     p.sizes = sizes;
@@ -864,6 +1036,7 @@
                     name,
                     price,
                     deal,
+                    customPrice,
                     hasSizes,
                     stock,
                     sizes,
@@ -892,6 +1065,7 @@
         document.getElementById('prod-name').value = p.name;
         document.getElementById('prod-price').value = p.price;
         document.getElementById('prod-deal').value = p.deal || 'none';
+        document.getElementById('prod-custom-price').checked = !!p.customPrice;
         document.getElementById('prod-has-sizes').checked = !!p.hasSizes;
 
         toggleSizeFields();
@@ -920,6 +1094,7 @@
         document.getElementById('prod-name').value = '';
         document.getElementById('prod-price').value = '';
         document.getElementById('prod-deal').value = 'none';
+        document.getElementById('prod-custom-price').checked = false;
         document.getElementById('prod-stock').value = '';
         document.getElementById('prod-has-sizes').checked = false;
         document.getElementById('prod-img').value = '';
@@ -953,15 +1128,17 @@
 
             const dealObj = DEAL_CONFIG[p.deal];
             const dealText = dealObj ? `<br><small style="color:var(--primary); font-weight:bold;">⭐ ${dealObj.label} Deal</small>` : '';
+            const customText = p.customPrice ? `<br><small style="color:var(--warning); font-weight:bold;">🎨 Custom Price / Commission</small>` : '';
 
             list.innerHTML += `
                 <div class="inv-item">
                     <div style="display:flex; align-items:center;">
                         ${thumb}
                         <div>
-                            <b>${p.name}</b> (${currency}${p.price.toFixed(2)})<br>
+                            <b>${p.name}</b> (${currency}${p.price.toFixed(2)}${p.customPrice ? '+' : ''})<br>
                             <small style="color:var(--text-dim);">${stockDetails}</small>
                             ${dealText}
+                            ${customText}
                         </div>
                     </div>
                     <div style="flex-shrink:0;">
@@ -971,6 +1148,17 @@
                 </div>
             `;
         });
+    }
+
+    // Allows editing or adding a commission note on an existing sale in history
+    function editSaleNote(index) {
+        const sale = sales[index];
+        if (!sale) return;
+        const updated = prompt("Update Commission / Sale Note:", sale.note || "");
+        if (updated === null) return;
+        sale.note = updated.trim();
+        saveData();
+        renderSales();
     }
 
     function renderSales() {
@@ -983,13 +1171,21 @@
             if (s.method === 'Cash') cash += s.total;
             else card += s.total;
 
+            const noteHtml = s.note 
+                ? `<div class="sale-note-box">📝 ${s.note}</div>` 
+                : '';
+
             list.innerHTML += `
                 <div class="inv-item">
-                    <div>
+                    <div style="flex:1;">
                         <b>${currency}${s.total.toFixed(2)}</b> (${s.method}) - <small style="color:var(--text-dim);">${s.time}</small><br>
                         <small style="color:var(--text-dim);">${s.items}</small>
+                        ${noteHtml}
                     </div>
-                    <button class="del-btn" onclick="refundSale(${idx})">Void</button>
+                    <div style="flex-shrink:0; display:flex; align-items:center;">
+                        <button class="edit-btn" onclick="editSaleNote(${idx})" title="Edit Note">✏️ Note</button>
+                        <button class="del-btn" onclick="refundSale(${idx})">Void</button>
+                    </div>
                 </div>
             `;
         });
@@ -998,7 +1194,6 @@
         document.getElementById('total-split').innerText = `Cash: ${currency}${cash.toFixed(2)} | Card: ${currency}${card.toFixed(2)}`;
     }
 
-    // Upgraded: Automatically restores stock if the sale has lineItems recorded
     function refundSale(index) {
         const sale = sales[index];
         if (!sale) return;
@@ -1036,13 +1231,14 @@
     }
 
     function exportCSV() {
-        let csv = "Time,Method,Total,Items\n";
+        let csv = "Time,Method,Total,Items,Commission/Note\n";
         sales.forEach(s => {
             const safeItems = (s.items || '').replace(/"/g, '""');
-            csv += `"${s.time}","${s.method}","${s.total.toFixed(2)}","${safeItems}"\n`;
+            const safeNote = (s.note || '').replace(/"/g, '""');
+            csv += `"${s.time}","${s.method}","${s.total.toFixed(2)}","${safeItems}","${safeNote}"\n`;
         });
         navigator.clipboard.writeText(csv).then(() => {
-            alert("Sales data copied to clipboard! Paste it into Notes or Google Sheets.");
+            alert("Sales & Commission data copied to clipboard! Paste it into Notes, Excel, or Google Sheets.");
         }).catch(() => {
             prompt("Copy sales data below:", csv);
         });
@@ -1065,13 +1261,13 @@
             try {
                 const data = JSON.parse(event.target.result);
                 if (data.products && Array.isArray(data.products)) {
-                    if (confirm("This will replace current inventory and sales with the backup file. Continue?")) {
+                    if (confirm("This will replace current inventory, photos, and sales with the backup file. Continue?")) {
                         products = data.products;
                         sales = data.sales || [];
-                        cart = {};
+                        clearCart();
                         saveData();
                         renderAll();
-                        alert("Backup restored successfully!");
+                        alert("✅ Backup restored! All products, photos, sizes, and sales notes are loaded.");
                     }
                 } else {
                     alert("Invalid backup file format.");
@@ -1079,7 +1275,7 @@
             } catch (err) {
                 alert("Error loading backup: " + err);
             }
-            e.target.value = ''; // Reset input so same file can be selected again if needed
+            e.target.value = '';
         };
         reader.readAsText(file);
     }
