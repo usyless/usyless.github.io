@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PonyCon POS</title>
+    <style>
+        :root {
+            --primary: #ec407a; /* Pinkie Pie Pink */
+            --secondary: #7e57c2; /* Twilight Purple */
+            --bg: #fce4ec;
+            --card: #ffffff;
+            --text: #333333;
+        }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { margin: 0; padding: 0; background-color: var(--bg); color: var(--text); padding-bottom: 85px; }
+        
+        /* Header & Navigation */
+        header { background: linear-gradient(135deg, var(--secondary), var(--primary)); color: white; padding: 15px; text-align: center; font-size: 1.3rem; font-weight: bold; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        nav { display: flex; position: fixed; bottom: 0; width: 100%; background: white; box-shadow: 0 -2px 5px rgba(0,0,0,0.1); z-index: 100; }
+        nav button { flex: 1; padding: 14px 5px; border: none; background: none; font-size: 0.95rem; font-weight: bold; color: #777; cursor: pointer; }
+        nav button.active { color: var(--primary); border-top: 3px solid var(--primary); background: #fff9fb; }
+
+        /* Views */
+        .view { display: none; padding: 15px; }
+        .view.active { display: block; }
+
+        /* Search Bar */
+        .search-box { width: 100%; padding: 12px 14px; border-radius: 25px; border: 2px solid var(--primary); font-size: 1rem; margin-bottom: 12px; outline: none; background: white; }
+
+        /* Checkout Grid */
+        .product-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .prod-btn { background: var(--card); border: 2px solid var(--primary); border-radius: 12px; padding: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; justify-content: space-between; cursor: pointer; transition: transform 0.05s; }
+        .prod-btn:active { transform: scale(0.97); background-color: #f8bbd0; }
+        .prod-btn.out-of-stock { border-color: #ccc; opacity: 0.55; pointer-events: none; }
+        
+        .prod-img-wrap { width: 100%; height: 95px; border-radius: 8px; overflow: hidden; background: #f3f3f3; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; font-size: 2.2rem; }
+        .prod-img { width: 100%; height: 100%; object-fit: cover; }
+        .prod-name { font-weight: bold; font-size: 0.95rem; margin-bottom: 4px; color: var(--secondary); line-height: 1.2; }
+        .prod-price { font-size: 1.1rem; font-weight: 800; color: var(--primary); }
+        .prod-stock { font-size: 0.8rem; color: #666; margin-top: 4px; }
+
+        /* Cart Bar */
+        .cart-panel { background: white; border-radius: 12px; padding: 15px; margin-top: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .cart-controls button { background: var(--secondary); color: white; border: none; border-radius: 5px; width: 30px; height: 30px; font-weight: bold; font-size: 1.1rem; margin: 0 4px; cursor: pointer; }
+        .cart-total { font-size: 1.4rem; font-weight: bold; text-align: right; margin: 15px 0; color: var(--primary); }
+        .pay-btns { display: flex; gap: 10px; }
+        .btn-main { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; color: white; cursor: pointer; }
+        .btn-cash { background: #4caf50; }
+        .btn-card { background: #2196f3; }
+        .btn-clear { background: #f44336; padding: 10px; margin-top: 10px; width: 100%; }
+
+        /* Forms & Lists */
+        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        input, select { width: 100%; padding: 12px; margin: 6px 0 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; }
+        .btn-submit { background: var(--primary); color: white; width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .inv-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 10px 0; }
+        .del-btn { background: #ff5252; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+        .inv-thumb { width: 45px; height: 45px; border-radius: 6px; object-fit: cover; margin-right: 10px; background: #eee; flex-shrink: 0; }
+    </style>
+</head>
+<body>
+
+<header>🦄 PonyCon Vendor POS</header>
+
+<!-- SELL VIEW -->
+<div id="sell-view" class="view active">
+    <input type="search" id="search-input" class="search-box" placeholder="🔍 Search items..." oninput="renderGrid()">
+    
+    <div id="product-grid" class="product-grid"></div>
+    
+    <div class="cart-panel">
+        <h3 style="margin-top:0; color:var(--secondary);">Current Sale</h3>
+        <div id="cart-items">Cart is empty</div>
+        <div class="cart-total" id="cart-total">Total: £0.00</div>
+        <div class="pay-btns">
+            <button class="btn-main btn-cash" onclick="checkout('Cash')">💵 Cash</button>
+            <button class="btn-main btn-card" onclick="checkout('Card/Tap')">💳 Card / QR</button>
+        </div>
+        <button class="btn-main btn-clear" onclick="clearCart()">Clear Cart</button>
+    </div>
+</div>
+
+<!-- INVENTORY VIEW -->
+<div id="inv-view" class="view">
+    <div class="card">
+        <h3 style="margin-top:0;">Add / Update Product</h3>
+        <label><b>Item Name:</b></label>
+        <input type="text" id="prod-name" placeholder="e.g. Acrylic Charm">
+        
+        <label><b>Price (£):</b></label>
+        <input type="number" id="prod-price" placeholder="e.g. 8.50" step="0.01">
+        
+        <label><b>Starting Stock:</b></label>
+        <input type="number" id="prod-stock" placeholder="e.g. 25">
+        
+        <label><b>Product Photo:</b></label>
+        <input type="file" id="prod-img" accept="image/*">
+        
+        <button class="btn-submit" onclick="saveProduct()">Save Product</button>
+    </div>
+
+    <div class="card">
+        <h3>Current Inventory</h3>
+        <div id="inv-list"></div>
+    </div>
+</div>
+
+<!-- SALES & DATA VIEW -->
+<div id="sales-view" class="view">
+    <div class="card">
+        <h3 style="margin-top:0;">Convention Summary</h3>
+        <p style="font-size:1.3rem; font-weight:bold; color:var(--primary);" id="total-rev">Total Revenue: £0.00</p>
+        <p id="total-split">Cash: £0.00 | Card: £0.00</p>
+        <button class="btn-submit" style="background:var(--secondary); margin-bottom: 10px;" onclick="exportCSV()">📥 Copy Sales Data (CSV)</button>
+        <button class="btn-submit" style="background:#f44336;" onclick="resetSales()">🗑️ Reset Sales History</button>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0;">Data Backup & Transfer</h3>
+        <p style="font-size:0.85rem; color:#666;">Keep a copy on your phone or send your catalog to another device:</p>
+        <button class="btn-submit" style="background:#00897b; margin-bottom:10px;" onclick="downloadBackup()">💾 Download Full Backup (JSON)</button>
+        <input type="file" id="backup-file" accept=".json" style="display:none;" onchange="restoreBackup(event)">
+        <button class="btn-submit" style="background:#546e7a;" onclick="document.getElementById('backup-file').click()">📂 Restore from Backup</button>
+    </div>
+
+    <div class="card">
+        <h3>Recent Transactions</h3>
+        <div id="sales-list"></div>
+    </div>
+</div>
+
+<nav>
+    <button class="active" onclick="switchTab('sell', this)">🛒 Checkout</button>
+    <button onclick="switchTab('inv', this)">📦 Inventory</button>
+    <button onclick="switchTab('sales', this)">📊 Sales & Data</button>
+</nav>
+
+<script>
+    let currency = '£'; // Change to '$' or '€' if needed!
+    let products = JSON.parse(localStorage.getItem('mlp_products')) || [
+        { id: 1, name: "Pony Plushie", price: 25.00, stock: 10, image: "" },
+        { id: 2, name: "Enamel Pin", price: 10.00, stock: 30, image: "" },
+        { id: 3, name: "Sticker Sheet", price: 4.00, stock: 50, image: "" },
+        { id: 4, name: "A3 Poster Print", price: 12.00, stock: 20, image: "" }
+    ];
+    let sales = JSON.parse(localStorage.getItem('mlp_sales')) || [];
+    let cart = {};
+
+    function saveData() {
+        try {
+            localStorage.setItem('mlp_products', JSON.stringify(products));
+            localStorage.setItem('mlp_sales', JSON.stringify(sales));
+        } catch (e) {
+            alert("Storage limit reached! Please try using smaller images or delete old sales.");
+        }
+    }
+
+    function switchTab(tab, btn) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        document.getElementById(tab + '-view').classList.add('active');
+        if (btn) btn.classList.add('active');
+        renderAll();
+    }
+
+    function renderAll() {
+        renderGrid();
+        renderCart();
+        renderInventory();
+        renderSales();
+    }
+
+    function renderGrid() {
+        const grid = document.getElementById('product-grid');
+        const query = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+        grid.innerHTML = '';
+
+        const filtered = products.filter(p => p.name.toLowerCase().includes(query));
+
+        if (filtered.length === 0) {
+            grid.innerHTML = '<div style="grid-column: span 2; text-align:center; color:#888; padding:20px;">No items match your search.</div>';
+            return;
+        }
+
+        filtered.forEach(p => {
+            const inCart = cart[p.id] || 0;
+            const left = p.stock - inCart;
+            const btn = document.createElement('div');
+            btn.className = 'prod-btn ' + (left <= 0 ? 'out-of-stock' : '');
+            btn.onclick = () => addToCart(p.id);
+
+            const imgHtml = p.image 
+                ? `<img src="${p.image}" class="prod-img">` 
+                : `<span>🦄</span>`;
+
+            btn.innerHTML = `
+                <div class="prod-img-wrap">${imgHtml}</div>
+                <div class="prod-name">${p.name}</div>
+                <div class="prod-price">${currency}${p.price.toFixed(2)}</div>
+                <div class="prod-stock">${left > 0 ? left + ' left' : 'SOLD OUT'}</div>
+            `;
+            grid.appendChild(btn);
+        });
+    }
+
+    function addToCart(id) {
+        const p = products.find(x => x.id === id);
+        const currentQty = cart[id] || 0;
+        if (currentQty < p.stock) {
+            cart[id] = currentQty + 1;
+            renderAll();
+        }
+    }
+
+    function changeCartQty(id, delta) {
+        if (!cart[id]) return;
+        cart[id] += delta;
+        if (cart[id] <= 0) delete cart[id];
+        renderAll();
+    }
+
+    function clearCart() {
+        cart = {};
+        renderAll();
+    }
+
+    function renderCart() {
+        const container = document.getElementById('cart-items');
+        const totalEl = document.getElementById('cart-total');
+        container.innerHTML = '';
+        let total = 0;
+
+        const ids = Object.keys(cart);
+        if (ids.length === 0) {
+            container.innerHTML = '<p style="color:#888; text-align:center;">Tap items above to add to sale.</p>';
+            totalEl.innerText = `Total: ${currency}0.00`;
+            return;
+        }
+
+        ids.forEach(id => {
+            const p = products.find(x => x.id == id);
+            const qty = cart[id];
+            const sub = p.price * qty;
+            total += sub;
+            container.innerHTML += `
+                <div class="cart-item">
+                    <span><b>${qty}x</b> ${p.name} (${currency}${sub.toFixed(2)})</span>
+                    <div class="cart-controls">
+                        <button onclick="changeCartQty(${p.id}, -1)">-</button>
+                        <button onclick="changeCartQty(${p.id}, 1)">+</button>
+                    </div>
+                </div>
+            `;
+        });
+        totalEl.innerText = `Total: ${currency}${total.toFixed(2)}`;
+    }
+
+    function checkout(method) {
+        const ids = Object.keys(cart);
+        if (ids.length === 0) return alert("Cart is empty!");
+
+        let total = 0;
+        let itemsSummary = [];
+        ids.forEach(id => {
+            const p = products.find(x => x.id == id);
+            total += p.price * cart[id];
+            itemsSummary.push(`${cart[id]}x ${p.name}`);
+        });
+
+        if (method === 'Cash') {
+            const tendered = prompt(`Total is ${currency}${total.toFixed(2)}.\nEnter cash given by customer:`, total.toFixed(2));
+            if (tendered === null) return;
+            const cashNum = parseFloat(tendered);
+            if (isNaN(cashNum) || cashNum < total) return alert("Not enough cash!");
+            const change = cashNum - total;
+            alert(`Give Change: ${currency}${change.toFixed(2)}`);
+        }
+
+        // Deduct stock
+        ids.forEach(id => {
+            const p = products.find(x => x.id == id);
+            p.stock -= cart[id];
+        });
+
+        // Save sale
+        sales.unshift({
+            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+            items: itemsSummary.join(', '),
+            total: total,
+            method: method
+        });
+
+        cart = {};
+        saveData();
+        renderAll();
+    }
+
+    // Compress phone camera images down so localStorage won't run out of memory!
+    function processImageFile(file, callback) {
+        if (!file) return callback("");
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const maxDim = 200; // 200px thumbnail is ideal for fast POS
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > maxDim) {
+                        height = Math.round((height * maxDim) / width);
+                        width = maxDim;
+                    }
+                } else {
+                    if (height > maxDim) {
+                        width = Math.round((width * maxDim) / height);
+                        height = maxDim;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                // Compressed JPEG thumbnail
+                callback(canvas.toDataURL('image/jpeg', 0.7));
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function saveProduct() {
+        const name = document.getElementById('prod-name').value.trim();
+        const price = parseFloat(document.getElementById('prod-price').value);
+        const stock = parseInt(document.getElementById('prod-stock').value);
+        const fileInput = document.getElementById('prod-img');
+
+        if (!name || isNaN(price) || isNaN(stock)) return alert("Please fill in Name, Price, and Stock!");
+
+        processImageFile(fileInput.files[0], function(compressedImage) {
+            products.push({
+                id: Date.now(),
+                name: name,
+                price: price,
+                stock: stock,
+                image: compressedImage
+            });
+
+            document.getElementById('prod-name').value = '';
+            document.getElementById('prod-price').value = '';
+            document.getElementById('prod-stock').value = '';
+            fileInput.value = '';
+
+            saveData();
+            renderAll();
+            alert("Product added!");
+        });
+    }
+
+    function editStock(id) {
+        const p = products.find(x => x.id === id);
+        const newStock = prompt(`Update stock quantity for ${p.name}:`, p.stock);
+        if (newStock !== null && !isNaN(parseInt(newStock))) {
+            p.stock = parseInt(newStock);
+            saveData();
+            renderAll();
+        }
+    }
+
+    function deleteProduct(id) {
+        if (confirm("Delete this product?")) {
+            products = products.filter(x => x.id !== id);
+            saveData();
+            renderAll();
+        }
+    }
+
+    function renderInventory() {
+        const list = document.getElementById('inv-list');
+        list.innerHTML = '';
+        products.forEach(p => {
+            const thumb = p.image ? `<img src="${p.image}" class="inv-thumb">` : `<div class="inv-thumb" style="display:flex;align-items:center;justify-content:center;">🦄</div>`;
+            list.innerHTML += `
+                <div class="inv-item">
+                    <div style="display:flex; align-items:center;">
+                        ${thumb}
+                        <div>
+                            <b>${p.name}</b> (${currency}${p.price.toFixed(2)})<br>
+                            <small style="color:#666;">Stock: ${p.stock}</small>
+                        </div>
+                    </div>
+                    <div>
+                        <button class="del-btn" style="background:var(--secondary); margin-right:5px;" onclick="editStock(${p.id})">Stock</button>
+                        <button class="del-btn" onclick="deleteProduct(${p.id})">X</button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function renderSales() {
+        let rev = 0, cash = 0, card = 0;
+        const list = document.getElementById('sales-list');
+        list.innerHTML = '';
+
+        sales.forEach((s, idx) => {
+            rev += s.total;
+            if (s.method === 'Cash') cash += s.total;
+            else card += s.total;
+
+            list.innerHTML += `
+                <div class="inv-item">
+                    <div>
+                        <b>${currency}${s.total.toFixed(2)}</b> (${s.method}) - <small>${s.time}</small><br>
+                        <small style="color:#666;">${s.items}</small>
+                    </div>
+                    <button class="del-btn" onclick="refundSale(${idx})">Void</button>
+                </div>
+            `;
+        });
+
+        document.getElementById('total-rev').innerText = `Total Revenue: ${currency}${rev.toFixed(2)}`;
+        document.getElementById('total-split').innerText = `Cash: ${currency}${cash.toFixed(2)} | Card: ${currency}${card.toFixed(2)}`;
+    }
+
+    function refundSale(index) {
+        if (confirm("Void this sale? (Note: Adjust stock manually in Inventory)")) {
+            sales.splice(index, 1);
+            saveData();
+            renderAll();
+        }
+    }
+
+    function resetSales() {
+        if (confirm("Are you sure you want to delete ALL sales history?")) {
+            sales = [];
+            saveData();
+            renderAll();
+        }
+    }
+
+    function exportCSV() {
+        let csv = "Time,Method,Total,Items\n";
+        sales.forEach(s => {
+            csv += `"${s.time}","${s.method}","${s.total.toFixed(2)}","${s.items}"\n`;
+        });
+        navigator.clipboard.writeText(csv).then(() => {
+            alert("Sales data copied to clipboard! Paste it into Notes or Google Sheets.");
+        }).catch(() => {
+            prompt("Copy sales data below:", csv);
+        });
+    }
+
+    // Complete Backup & Restore (JSON)
+    function downloadBackup() {
+        const backupData = {
+            products: products,
+            sales: sales,
+            date: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `ponycon_pos_backup_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+    }
+
+    function restoreBackup(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const data = JSON.parse(event.target.result);
+                if (data.products && Array.isArray(data.products)) {
+                    if (confirm("This will replace current inventory and sales with the backup. Continue?")) {
+                        products = data.products;
+                        sales = data.sales || [];
+                        saveData();
+                        renderAll();
+                        alert("Backup restored successfully!");
+                    }
+                } else {
+                    alert("Invalid backup file format!");
+                }
+            } catch (err) {
+                alert("Error reading file: " + err);
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    renderAll();
+</script>
+</body>
+</html>
