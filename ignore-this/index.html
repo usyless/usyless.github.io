@@ -6,261 +6,644 @@
     <title>PonyCon POS</title>
     <style>
         :root {
-            --bg: #12101a;
-            --card: #1c1829;
-            --card-border: #2d2642;
-            --primary: #ff4081; /* Neon Pink */
-            --primary-hover: #f50057;
-            --secondary: #b388ff; /* Twilight Lavender */
+            --bg: #0d0b14;
+            --surface: #171424;
+            --card: #201b30;
+            --card-hover: #28223d;
+            --card-border: rgba(179, 136, 255, 0.16);
+            --primary: #ff3d8b;
+            --primary-glow: rgba(255, 61, 139, 0.35);
+            --secondary: #b388ff;
             --accent: #7c4dff;
-            --text: #f5f3fa;
-            --text-dim: #9d96b3;
-            --input-bg: #272239;
+            --text: #f8f6fc;
+            --text-dim: #9e96b8;
+            --input-bg: #13101d;
             --success: #00e676;
+            --cash-green: #00c853;
+            --card-blue: #2979ff;
             --danger: #ff5252;
             --warning: #ffd740;
         }
-        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { margin: 0; padding: 0; background-color: var(--bg); color: var(--text); padding-bottom: 90px; }
-        
-        /* Header & Navigation */
-        header { 
-            background: linear-gradient(135deg, #4a148c, #880e4f); 
-            color: white; 
-            padding: 15px; 
-            text-align: center; 
-            font-size: 1.25rem; 
-            font-weight: 800; 
-            position: sticky; 
-            top: 0; 
-            z-index: 100; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+        * { 
+            box-sizing: border-box; 
+            font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif; 
+            -webkit-tap-highlight-color: transparent;
         }
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background-color: var(--bg); 
+            background-image: radial-gradient(circle at 50% 0%, #26173e 0%, var(--bg) 55%);
+            background-attachment: fixed;
+            color: var(--text); 
+            padding-bottom: 165px; /* Space for floating cart + nav */
+            min-height: 100vh;
+        }
+
+        /* Top Sticky Area */
+        .top-sticky {
+            position: sticky;
+            top: 0;
+            z-index: 90;
+            background: rgba(13, 11, 20, 0.85);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--card-border);
+        }
+        header { 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px; 
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.15rem; 
+            font-weight: 900; 
+            background: linear-gradient(90deg, #fff, var(--secondary), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header-stat {
+            font-size: 0.78rem;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--card-border);
+            padding: 5px 10px;
+            border-radius: 20px;
+            color: var(--secondary);
+        }
+
+        /* Views */
+        .view { display: none; padding: 14px; max-width: 720px; margin: 0 auto; }
+        .view.active { display: block; }
+
+        /* Search & Filter Bar */
+        .controls-bar {
+            padding: 0 14px 10px;
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .search-wrap {
+            position: relative;
+            margin-bottom: 10px;
+        }
+        .search-box { 
+            width: 100%; 
+            padding: 11px 16px 11px 38px; 
+            border-radius: 14px; 
+            border: 1px solid var(--card-border); 
+            font-size: 0.95rem; 
+            outline: none; 
+            background: var(--input-bg); 
+            color: white;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .search-box:focus { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 3px rgba(255, 61, 139, 0.15);
+        }
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.95rem;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .filter-pills {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding-bottom: 2px;
+        }
+        .filter-pills::-webkit-scrollbar { display: none; }
+        .pill {
+            background: var(--surface);
+            color: var(--text-dim);
+            border: 1px solid var(--card-border);
+            padding: 6px 13px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .pill.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 3px 10px var(--primary-glow);
+        }
+
+        /* Product Grid */
+        .product-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 12px; 
+        }
+        @media (min-width: 540px) {
+            .product-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        .prod-btn { 
+            background: var(--card); 
+            border: 1.5px solid var(--card-border); 
+            border-radius: 16px; 
+            padding: 10px; 
+            text-align: left; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            cursor: pointer; 
+            box-shadow: 0 6px 16px rgba(0,0,0,0.25); 
+            position: relative;
+            user-select: none;
+            transition: transform 0.12s, border-color 0.15s, box-shadow 0.15s;
+            overflow: hidden;
+        }
+        .prod-btn:active { transform: scale(0.96); }
+        .prod-btn.in-cart {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 1px var(--primary), 0 8px 20px rgba(255, 61, 139, 0.2);
+        }
+        .prod-btn.out-of-stock { 
+            opacity: 0.38; 
+            pointer-events: none; 
+            filter: grayscale(0.6);
+        }
+        
+        /* Badges on Product Cards */
+        .badge-deal {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: linear-gradient(135deg, #ff3d8b, #ff7043);
+            color: white;
+            font-size: 0.65rem;
+            padding: 3px 8px;
+            border-radius: 8px;
+            font-weight: 800;
+            z-index: 2;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        }
+        .badge-custom {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: linear-gradient(135deg, #7c4dff, #448aff);
+            color: white;
+            font-size: 0.65rem;
+            padding: 3px 8px;
+            border-radius: 8px;
+            font-weight: 800;
+            z-index: 2;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        }
+        .badge-qty {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--primary);
+            color: white;
+            font-size: 0.78rem;
+            min-width: 26px;
+            height: 26px;
+            padding: 0 7px;
+            border-radius: 13px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+            border: 2px solid var(--card);
+        }
+
+        .prod-img-wrap { 
+            width: 100%; 
+            height: 105px; 
+            border-radius: 11px; 
+            overflow: hidden; 
+            background: linear-gradient(145deg, #151122, #1e1830); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin-bottom: 9px; 
+            font-size: 2.4rem; 
+        }
+        .prod-img { width: 100%; height: 100%; object-fit: cover; }
+        .prod-name { 
+            font-weight: 700; 
+            font-size: 0.92rem; 
+            margin-bottom: 6px; 
+            color: var(--text); 
+            line-height: 1.25;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .prod-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            width: 100%;
+            margin-top: auto;
+        }
+        .prod-price { font-size: 1.08rem; font-weight: 900; color: var(--primary); }
+        .prod-stock { font-size: 0.72rem; color: var(--text-dim); font-weight: 600; }
+
+        /* Floating Quick-Checkout Bar (No Scrolling Needed!) */
+        .floating-cart-bar {
+            position: fixed;
+            bottom: 68px;
+            left: 10px;
+            right: 10px;
+            max-width: 700px;
+            margin: 0 auto;
+            background: rgba(32, 27, 48, 0.96);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1.5px solid var(--primary);
+            border-radius: 18px;
+            padding: 10px 12px;
+            z-index: 95;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), 0 0 20px rgba(255, 61, 139, 0.22);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            transform: translateY(150%);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.2s;
+        }
+        .floating-cart-bar.visible {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .fc-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            flex: 1;
+            min-width: 0;
+        }
+        .fc-pill-count {
+            background: var(--primary);
+            color: white;
+            font-weight: 900;
+            font-size: 0.9rem;
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 3px 10px var(--primary-glow);
+        }
+        .fc-info {
+            min-width: 0;
+        }
+        .fc-total {
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: white;
+            line-height: 1.1;
+        }
+        .fc-sub {
+            font-size: 0.73rem;
+            color: var(--secondary);
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .fc-actions {
+            display: flex;
+            gap: 7px;
+            flex-shrink: 0;
+        }
+        .fc-btn {
+            border: none;
+            border-radius: 12px;
+            padding: 10px 13px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: transform 0.1s;
+        }
+        .fc-btn:active { transform: scale(0.95); }
+        .fc-btn-cash { background: var(--cash-green); color: #051b0e; }
+        .fc-btn-card { background: var(--card-blue); }
+
+        /* Slide-Up Cart Drawer Sheet */
+        .drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.72);
+            backdrop-filter: blur(4px);
+            z-index: 150;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .drawer-overlay.open { display: flex; }
+        .cart-sheet {
+            background: var(--surface);
+            border-top: 1px solid var(--card-border);
+            width: 100%;
+            max-width: 600px;
+            border-radius: 24px 24px 0 0;
+            padding: 16px 18px 26px;
+            max-height: 86vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.7);
+            animation: slideUp 0.22s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .sheet-handle {
+            width: 42px;
+            height: 5px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+            margin: 0 auto 12px;
+            cursor: pointer;
+        }
+        .sheet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .sheet-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--text);
+            margin: 0;
+        }
+        .btn-clear-sm {
+            background: rgba(255, 82, 82, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(255, 82, 82, 0.3);
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .cart-items-scroll {
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 4px;
+            margin-bottom: 12px;
+            max-height: 42vh;
+        }
+        .cart-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 11px 0; 
+            border-bottom: 1px solid var(--card-border); 
+            gap: 10px;
+        }
+        .cart-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .cart-controls button { 
+            background: var(--card); 
+            color: var(--text); 
+            border: 1px solid var(--card-border); 
+            border-radius: 9px; 
+            width: 34px; 
+            height: 34px; 
+            font-weight: 900; 
+            font-size: 1.1rem; 
+            cursor: pointer; 
+        }
+        .cart-controls button:active { background: var(--primary); border-color: var(--primary); }
+        .cart-controls button:disabled { opacity: 0.25; pointer-events: none; }
+        .cart-qty-num {
+            font-weight: 800;
+            min-width: 22px;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        .cart-note-input {
+            width: 100%;
+            padding: 11px 13px;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            background: var(--input-bg);
+            color: var(--text);
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        .cart-note-input:focus { border-color: var(--warning); outline: none; }
+
+        .sheet-summary {
+            background: var(--card);
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin: 12px 0;
+            border: 1px solid var(--card-border);
+        }
+        .cart-discount { color: var(--success); font-size: 0.85rem; font-weight: 700; margin-bottom: 6px; }
+        .sheet-total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.35rem;
+            font-weight: 900;
+            color: var(--primary);
+        }
+        .pay-btns { display: flex; gap: 10px; }
+        .btn-main { 
+            flex: 1; 
+            padding: 15px; 
+            border: none; 
+            border-radius: 14px; 
+            font-size: 1rem; 
+            font-weight: 800; 
+            color: white; 
+            cursor: pointer; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-cash { background: var(--cash-green); color: #041f0e; }
+        .btn-card { background: var(--card-blue); }
+
+        /* Bottom Navigation */
         nav { 
             display: flex; 
             position: fixed; 
             bottom: 0; 
-            width: 100%; 
-            background: #181424; 
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(18, 15, 28, 0.95); 
+            backdrop-filter: blur(12px);
             border-top: 1px solid var(--card-border); 
             z-index: 100; 
         }
         nav button { 
             flex: 1; 
-            padding: 14px 5px; 
             border: none; 
             background: none; 
-            font-size: 0.95rem; 
-            font-weight: bold; 
+            font-size: 0.78rem; 
+            font-weight: 700; 
             color: var(--text-dim); 
             cursor: pointer; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            transition: color 0.15s;
         }
+        nav button .nav-ico { font-size: 1.15rem; }
         nav button.active { 
             color: var(--primary); 
-            border-top: 3px solid var(--primary); 
-            background: rgba(255, 64, 129, 0.08); 
         }
 
-        /* Views */
-        .view { display: none; padding: 15px; }
-        .view.active { display: block; }
-
-        /* Search Bar */
-        .search-box { 
-            width: 100%; 
-            padding: 12px 16px; 
-            border-radius: 25px; 
-            border: 1px solid var(--card-border); 
-            font-size: 1rem; 
-            margin-bottom: 12px; 
-            outline: none; 
-            background: var(--input-bg); 
-            color: white; 
-        }
-        .search-box:focus { border-color: var(--primary); }
-
-        /* Checkout Grid */
-        .product-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .prod-btn { 
-            background: var(--card); 
-            border: 1px solid var(--card-border); 
-            border-radius: 12px; 
-            padding: 10px; 
-            text-align: center; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: space-between; 
-            cursor: pointer; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
-            position: relative;
-            user-select: none;
-        }
-        .prod-btn:active { transform: scale(0.97); border-color: var(--primary); }
-        .prod-btn.out-of-stock { opacity: 0.4; pointer-events: none; border-color: #444; }
-        
-        .badge-deal {
-            position: absolute;
-            top: 6px;
-            right: 6px;
-            background: var(--primary);
-            color: white;
-            font-size: 0.65rem;
-            padding: 3px 6px;
-            border-radius: 10px;
-            font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-        }
-        .badge-custom {
-            position: absolute;
-            top: 6px;
-            left: 6px;
-            background: var(--accent);
-            color: white;
-            font-size: 0.65rem;
-            padding: 3px 6px;
-            border-radius: 10px;
-            font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-        }
-
-        .prod-img-wrap { 
-            width: 100%; 
-            height: 95px; 
-            border-radius: 8px; 
-            overflow: hidden; 
-            background: #13101c; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            margin-bottom: 8px; 
-            font-size: 2.2rem; 
-        }
-        .prod-img { width: 100%; height: 100%; object-fit: cover; }
-        .prod-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; color: var(--secondary); line-height: 1.2; }
-        .prod-price { font-size: 1.1rem; font-weight: 800; color: var(--primary); }
-        .prod-stock { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; }
-
-        /* Cart Bar */
-        .cart-panel { 
-            background: var(--card); 
-            border: 1px solid var(--card-border); 
-            border-radius: 14px; 
-            padding: 15px; 
-            margin-top: 15px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3); 
-        }
-        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--card-border); }
-        .cart-controls button { 
-            background: var(--secondary); 
-            color: #12101a; 
-            border: none; 
-            border-radius: 6px; 
-            width: 32px; 
-            height: 32px; 
-            font-weight: 800; 
-            font-size: 1.1rem; 
-            margin: 0 3px; 
-            cursor: pointer; 
-        }
-        .cart-controls button:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
-        .cart-discount { color: var(--success); font-size: 0.9rem; font-weight: bold; text-align: right; margin-top: 8px; line-height: 1.4; }
-        .cart-total { font-size: 1.5rem; font-weight: 900; text-align: right; margin: 12px 0; color: var(--primary); }
-        
-        /* Commission / Note Input in Cart */
-        .cart-note-wrap {
-            margin: 12px 0;
-        }
-        .cart-note-input {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid var(--card-border);
-            background: var(--input-bg);
-            color: var(--text);
-            font-size: 0.95rem;
-            margin: 4px 0 0 0;
-        }
-        .cart-note-input:focus {
-            border-color: var(--warning);
-        }
-
-        .pay-btns { display: flex; gap: 10px; }
-        .btn-main { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; color: white; cursor: pointer; }
-        .btn-cash { background: #2e7d32; }
-        .btn-card { background: #1565c0; }
-        .btn-clear { background: #b71c1c; padding: 10px; margin-top: 10px; width: 100%; }
-
-        /* Forms & Cards */
+        /* Cards & Forms (Inventory & Sales) */
         .card { 
             background: var(--card); 
             border: 1px solid var(--card-border); 
             padding: 16px; 
-            border-radius: 12px; 
-            margin-bottom: 15px; 
+            border-radius: 16px; 
+            margin-bottom: 16px; 
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
         }
-        label { font-size: 0.85rem; font-weight: bold; color: var(--text-dim); }
-        input, select { 
+        .card-title {
+            margin: 0 0 14px 0;
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--secondary);
+        }
+        label { font-size: 0.82rem; font-weight: 700; color: var(--text-dim); display: block; }
+        input[type="text"], input[type="number"], input[type="file"], select { 
             width: 100%; 
             padding: 12px; 
             margin: 6px 0 14px; 
             border: 1px solid var(--card-border); 
-            border-radius: 8px; 
-            font-size: 1rem; 
+            border-radius: 11px; 
+            font-size: 0.95rem; 
             background: var(--input-bg); 
             color: white; 
             outline: none; 
         }
         input:focus, select:focus { border-color: var(--secondary); }
+        
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--input-bg);
+            padding: 11px 13px;
+            border-radius: 11px;
+            margin-bottom: 10px;
+            border: 1px solid var(--card-border);
+            cursor: pointer;
+        }
+        .toggle-row input { width: 18px; height: 18px; margin: 0; accent-color: var(--primary); }
+        .toggle-row span { font-size: 0.88rem; font-weight: 600; color: var(--text); }
+
         .btn-submit { 
-            background: var(--primary); 
+            background: linear-gradient(135deg, var(--primary), #ff1744); 
             color: white; 
             width: 100%; 
-            padding: 12px; 
+            padding: 13px; 
             border: none; 
-            border-radius: 8px; 
-            font-size: 1rem; 
-            font-weight: bold; 
+            border-radius: 12px; 
+            font-size: 0.95rem; 
+            font-weight: 800; 
             cursor: pointer; 
+            box-shadow: 0 4px 12px var(--primary-glow);
         }
         .btn-cancel {
-            background: #424242;
-            color: white;
+            background: #2e2942;
+            color: var(--text);
             width: 100%;
-            padding: 10px;
+            padding: 11px;
             border: none;
-            border-radius: 8px;
-            font-size: 0.95rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
             margin-top: 8px;
             cursor: pointer;
         }
 
-        .inv-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding: 10px 0; gap: 8px; }
-        .del-btn { background: var(--danger); color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .edit-btn { background: var(--secondary); color: #12101a; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-right: 4px; }
-        .inv-thumb { width: 45px; height: 45px; border-radius: 6px; object-fit: cover; margin-right: 10px; background: #272239; flex-shrink: 0; }
+        .inv-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid var(--card-border); 
+            padding: 12px 0; 
+            gap: 10px; 
+        }
+        .inv-item:last-child { border-bottom: none; }
+        .del-btn { background: rgba(255, 82, 82, 0.18); color: var(--danger); border: 1px solid rgba(255,82,82,0.3); padding: 7px 11px; border-radius: 9px; cursor: pointer; font-weight: 800; font-size: 0.8rem; }
+        .edit-btn { background: rgba(179, 136, 255, 0.18); color: var(--secondary); border: 1px solid rgba(179,136,255,0.3); padding: 7px 11px; border-radius: 9px; cursor: pointer; font-weight: 800; font-size: 0.8rem; margin-right: 4px; }
+        .inv-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; margin-right: 12px; background: var(--input-bg); flex-shrink: 0; border: 1px solid var(--card-border); }
 
-        /* Sale Note Badge in History */
         .sale-note-box {
-            margin-top: 5px;
+            margin-top: 6px;
             padding: 6px 10px;
-            background: rgba(255, 215, 64, 0.12);
+            background: rgba(255, 215, 64, 0.1);
             border-left: 3px solid var(--warning);
-            border-radius: 4px;
+            border-radius: 6px;
             color: var(--warning);
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             font-weight: 600;
             word-break: break-word;
         }
+
+        /* Stats Grid in Sales View */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .stat-box {
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            padding: 12px 10px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stat-label { font-size: 0.72rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; }
+        .stat-val { font-size: 1.15rem; font-weight: 900; margin-top: 4px; }
 
         /* Size Matrix Box */
         .sizes-box { 
             background: var(--input-bg); 
             padding: 12px; 
-            border-radius: 8px; 
+            border-radius: 12px; 
             margin-bottom: 14px; 
             border: 1px solid var(--card-border); 
         }
@@ -268,83 +651,158 @@
         .size-col { text-align: center; }
         .size-col input { padding: 8px 4px; text-align: center; margin: 4px 0 0; }
 
-        /* Modal for Size Selection */
+        /* Modals (Size Picker, Cash Calculator, Custom Commission) */
         .modal-overlay { 
             position: fixed; 
-            top:0; left:0; width:100%; height:100%; 
-            background: rgba(0,0,0,0.75); 
+            inset: 0; 
+            background: rgba(0,0,0,0.78); 
+            backdrop-filter: blur(5px);
             display: none; 
             align-items: center; 
             justify-content: center; 
             z-index: 200; 
-            padding: 20px; 
+            padding: 18px; 
         }
         .modal { 
-            background: var(--card); 
+            background: var(--surface); 
             border: 1px solid var(--card-border); 
             width: 100%; 
-            max-width: 340px; 
-            border-radius: 14px; 
+            max-width: 370px; 
+            border-radius: 20px; 
             padding: 20px; 
             text-align: center; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6); 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.7); 
         }
         .size-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
         .size-pick-btn { 
-            background: var(--input-bg); 
+            background: var(--card); 
             color: white; 
-            border: 2px solid var(--secondary); 
+            border: 1.5px solid var(--secondary); 
             padding: 12px; 
-            border-radius: 8px; 
+            border-radius: 12px; 
             font-size: 1rem; 
-            font-weight: bold; 
+            font-weight: 800; 
             cursor: pointer; 
         }
         .size-pick-btn:active { background: var(--secondary); color: #12101a; }
-        .size-pick-btn.out { opacity: 0.3; border-color: #555; pointer-events: none; }
+        .size-pick-btn.out { opacity: 0.28; border-color: #444; pointer-events: none; }
+
+        /* Quick Cash Tender Buttons */
+        .quick-cash-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 10px 0 14px;
+        }
+        .qc-btn {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            color: var(--secondary);
+            padding: 10px 6px;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .qc-btn:active { background: var(--secondary); color: #000; }
+        .change-box {
+            background: rgba(0, 230, 118, 0.1);
+            border: 1px solid rgba(0, 230, 118, 0.3);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 14px;
+            color: var(--success);
+            font-weight: 800;
+            font-size: 1.1rem;
+        }
     </style>
 </head>
 <body>
 
-<header>🦄 PonyCon Vendor POS</header>
+<!-- TOP BAR & SEARCH (Sticky on Sell View) -->
+<div class="top-sticky">
+    <header>
+        <div class="brand">🦄 PonyCon POS</div>
+        <div class="header-stat" id="header-rev-pill">Today: £0.00</div>
+    </header>
+
+    <div id="sell-controls" class="controls-bar">
+        <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="search" id="search-input" class="search-box" placeholder="Search pins, shirts, commissions..." oninput="renderGrid()">
+        </div>
+        <div class="filter-pills">
+            <button class="pill active" onclick="setFilter('all', this)">All Items</button>
+            <button class="pill" onclick="setFilter('deals', this)">⭐ Deals</button>
+            <button class="pill" onclick="setFilter('shirts', this)">👕 Shirts</button>
+            <button class="pill" onclick="setFilter('commissions', this)">🎨 Commissions</button>
+        </div>
+    </div>
+</div>
 
 <!-- SELL VIEW -->
 <div id="sell-view" class="view active">
-    <input type="search" id="search-input" class="search-box" placeholder="🔍 Search items, shirts, commissions..." oninput="renderGrid()">
-    
     <div id="product-grid" class="product-grid"></div>
-    
-    <div class="cart-panel">
-        <h3 style="margin-top:0; color:var(--secondary);">Current Sale</h3>
-        <div id="cart-items">Cart is empty</div>
-        <div id="cart-discount" class="cart-discount" style="display:none;"></div>
-        
-        <div class="cart-note-wrap">
-            <label for="cart-note">📝 Commission / Purchase Info (Optional):</label>
-            <input type="text" id="cart-note" class="cart-note-input" placeholder="e.g. Sketch for @Dashie, OC ref, pickup 3pm...">
+</div>
+
+<!-- FLOATING CHECKOUT BAR (Always accessible without scrolling!) -->
+<div id="floating-cart" class="floating-cart-bar">
+    <div class="fc-left" onclick="openCartDrawer()">
+        <div class="fc-pill-count" id="fc-count">0</div>
+        <div class="fc-info">
+            <div class="fc-total" id="fc-total">£0.00</div>
+            <div class="fc-sub" id="fc-sub">Tap to view cart / add note ▴</div>
+        </div>
+    </div>
+    <div class="fc-actions">
+        <button class="fc-btn fc-btn-cash" onclick="initiateCheckout('Cash')">💵 Cash</button>
+        <button class="fc-btn fc-btn-card" onclick="initiateCheckout('Card/Tap')">💳 Card</button>
+    </div>
+</div>
+
+<!-- SLIDE-UP CART DRAWER SHEET -->
+<div id="cart-drawer" class="drawer-overlay" onclick="if(event.target===this) closeCartDrawer()">
+    <div class="cart-sheet">
+        <div class="sheet-handle" onclick="closeCartDrawer()"></div>
+        <div class="sheet-header">
+            <h3 class="sheet-title">🛒 Current Sale</h3>
+            <button class="btn-clear-sm" onclick="clearCart()">Clear All</button>
         </div>
 
-        <div class="cart-total" id="cart-total">Total: £0.00</div>
-        <div class="pay-btns">
-            <button class="btn-main btn-cash" onclick="checkout('Cash')">💵 Cash</button>
-            <button class="btn-main btn-card" onclick="checkout('Card/Tap')">💳 Card / QR</button>
+        <div id="cart-items" class="cart-items-scroll"></div>
+
+        <div>
+            <label for="cart-note">📝 Commission / Customer Note (Optional):</label>
+            <input type="text" id="cart-note" class="cart-note-input" placeholder="e.g. Sketch for @Dashie, OC ref, pickup 3pm..." oninput="updateFloatingBarText()">
         </div>
-        <button class="btn-main btn-clear" onclick="clearCart()">Clear Cart</button>
+
+        <div class="sheet-summary">
+            <div id="cart-discount" class="cart-discount" style="display:none;"></div>
+            <div class="sheet-total-row">
+                <span>Total Due</span>
+                <span id="cart-total">£0.00</span>
+            </div>
+        </div>
+
+        <div class="pay-btns">
+            <button class="btn-main btn-cash" onclick="initiateCheckout('Cash')">💵 Cash</button>
+            <button class="btn-main btn-card" onclick="initiateCheckout('Card/Tap')">💳 Card / QR</button>
+        </div>
     </div>
 </div>
 
 <!-- INVENTORY VIEW -->
 <div id="inv-view" class="view">
     <div class="card" id="product-form-card">
-        <h3 style="margin-top:0; color:var(--secondary);" id="form-title">Add New Product</h3>
+        <h3 class="card-title" id="form-title">➕ Add New Product</h3>
         
-        <label>Item Name:</label>
+        <label>Item Name</label>
         <input type="text" id="prod-name" placeholder="e.g. Fluttershy Tee or Custom Commission">
         
-        <label>Default Price (£):</label>
+        <label>Default Price (£)</label>
         <input type="number" id="prod-price" placeholder="e.g. 3.00 or 25.00" step="0.01" min="0">
         
-        <label>Special "3 for £X" Bundle Deal:</label>
+        <label>Special "3 for £X" Bundle Deal</label>
         <select id="prod-deal">
             <option value="none">No Deal (Standard item)</option>
             <option value="stickers3for8">⭐ 3 for £8 Deal (Stickers/Pins)</option>
@@ -355,29 +813,23 @@
             <option value="deal3for25">⭐ 3 for £25 Deal</option>
         </select>
 
-        <div style="margin-bottom: 10px;">
-            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--warning);">
-                <input type="checkbox" id="prod-custom-price" style="width:auto; margin:0;">
-                <span>🎨 Commission / Variable Price (Ask for price & details when tapped)</span>
-            </label>
-        </div>
+        <label class="toggle-row">
+            <input type="checkbox" id="prod-custom-price">
+            <span>🎨 Commission / Variable Price (Ask price & details on tap)</span>
+        </label>
 
-        <div style="margin-bottom: 12px;">
-            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                <input type="checkbox" id="prod-has-sizes" style="width:auto; margin:0;" onchange="toggleSizeFields()">
-                <span>👕 This product has Shirt Sizes (S, M, L, XL, 2XL)</span>
-            </label>
-        </div>
+        <label class="toggle-row">
+            <input type="checkbox" id="prod-has-sizes" onchange="toggleSizeFields()">
+            <span>👕 Product has Shirt Sizes (S, M, L, XL, 2XL)</span>
+        </label>
 
-        <!-- Single Stock Input -->
         <div id="single-stock-wrap">
-            <label>Stock Quantity (or Commission Slots):</label>
+            <label>Stock Quantity (or Commission Slots)</label>
             <input type="number" id="prod-stock" placeholder="e.g. 25" min="0">
         </div>
 
-        <!-- Shirt Sizes Matrix -->
         <div id="sizes-stock-wrap" class="sizes-box" style="display:none;">
-            <label>Stock per Size:</label>
+            <label>Stock per Shirt Size:</label>
             <div class="size-inputs">
                 <div class="size-col"><small>S</small><input type="number" id="size-s" value="0" min="0"></div>
                 <div class="size-col"><small>M</small><input type="number" id="size-m" value="0" min="0"></div>
@@ -387,13 +839,13 @@
             </div>
         </div>
         
-        <label>Product Photo (optional):</label>
+        <label>Product Photo (optional)</label>
         <input type="file" id="prod-img" accept="image/*">
         
         <div id="remove-img-wrap" style="display:none; margin-bottom: 12px;">
-            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--danger);">
-                <input type="checkbox" id="prod-remove-img" style="width:auto; margin:0;">
-                <span>Remove current photo</span>
+            <label class="toggle-row" style="border-color: rgba(255,82,82,0.3);">
+                <input type="checkbox" id="prod-remove-img">
+                <span style="color:var(--danger);">Remove current photo</span>
             </label>
         </div>
         
@@ -402,7 +854,7 @@
     </div>
 
     <div class="card">
-        <h3 style="margin-top:0; color:var(--secondary);">Current Inventory</h3>
+        <h3 class="card-title">📦 Current Inventory</h3>
         <div id="inv-list"></div>
     </div>
 </div>
@@ -410,40 +862,93 @@
 <!-- SALES & DATA VIEW -->
 <div id="sales-view" class="view">
     <div class="card">
-        <h3 style="margin-top:0; color:var(--secondary);">Convention Summary</h3>
-        <p style="font-size:1.4rem; font-weight:900; color:var(--primary);" id="total-rev">Total Revenue: £0.00</p>
-        <p id="total-split" style="color:var(--text-dim);">Cash: £0.00 | Card: £0.00</p>
-        <button class="btn-submit" style="background:var(--secondary); color:#12101a; margin-bottom: 10px;" onclick="exportCSV()">📥 Copy Sales Data (CSV)</button>
-        <button class="btn-submit" style="background:var(--danger);" onclick="resetSales()">🗑️ Reset Sales History</button>
+        <h3 class="card-title">📊 Convention Summary</h3>
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-label">Total</div>
+                <div class="stat-val" id="total-rev" style="color:var(--primary);">£0.00</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">💵 Cash</div>
+                <div class="stat-val" id="total-cash" style="color:var(--success);">£0.00</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">💳 Card</div>
+                <div class="stat-val" id="total-card" style="color:#64b5f6;">£0.00</div>
+            </div>
+        </div>
+        <button class="btn-submit" style="background:var(--secondary); color:#12101a; margin-bottom: 10px; box-shadow:none;" onclick="exportCSV()">📥 Copy Sales & Commissions (CSV)</button>
+        <button class="btn-cancel" style="color:var(--danger);" onclick="resetSales()">🗑️ Reset Sales History</button>
     </div>
 
     <div class="card">
-        <h3 style="margin-top:0; color:var(--secondary);">Phone-to-Phone Backup & Restore</h3>
-        <p style="font-size:0.8rem; color:var(--text-dim); margin-top:0;">Saves all products, photos, sizes, sales & commission notes into one file to move between devices.</p>
-        <button class="btn-submit" style="background:#00897b; margin-bottom:10px;" onclick="downloadBackup()">💾 Export Full Backup (JSON)</button>
+        <h3 class="card-title">📲 Phone-to-Phone Backup & Restore</h3>
+        <p style="font-size:0.82rem; color:var(--text-dim); margin-top:0; line-height:1.4;">Exports all products, photos, shirt sizes, sales & commission notes into one file so you can transfer between phones.</p>
+        <button class="btn-submit" style="background:#00897b; margin-bottom:10px; box-shadow:none;" onclick="downloadBackup()">💾 Export Full Backup (JSON)</button>
         <input type="file" id="backup-file" accept=".json" style="display:none;" onchange="restoreBackup(event)">
-        <button class="btn-submit" style="background:#546e7a;" onclick="document.getElementById('backup-file').click()">📂 Import / Restore Backup</button>
+        <button class="btn-cancel" onclick="document.getElementById('backup-file').click()">📂 Import / Restore Backup File</button>
     </div>
 
     <div class="card">
-        <h3 style="margin-top:0; color:var(--secondary);">Recent Transactions</h3>
+        <h3 class="card-title">🧾 Recent Transactions</h3>
         <div id="sales-list"></div>
     </div>
 </div>
 
-<!-- MODAL: SIZE PICKER -->
+<!-- MODAL 1: SHIRT SIZE PICKER -->
 <div id="size-modal" class="modal-overlay" onclick="if(event.target===this) closeSizeModal()">
     <div class="modal">
-        <h3 id="modal-shirt-title" style="margin-top:0; color:var(--secondary);">Select Size</h3>
+        <h3 id="modal-shirt-title" style="margin-top:0; color:var(--secondary);">Select Shirt Size</h3>
         <div class="size-btns" id="size-picker-buttons"></div>
         <button class="btn-cancel" onclick="closeSizeModal()">Cancel</button>
     </div>
 </div>
 
+<!-- MODAL 2: CUSTOM COMMISSION / PRICE ENTRY -->
+<div id="comm-modal" class="modal-overlay" onclick="if(event.target===this) closeCommModal()">
+    <div class="modal" style="text-align:left;">
+        <h3 id="modal-comm-title" style="margin-top:0; color:var(--secondary); text-align:center;">🎨 Add Commission</h3>
+        <label>Agreed Price (£)</label>
+        <input type="number" id="comm-price-input" step="0.01" min="0">
+        <label>Commission Details / Customer Info</label>
+        <input type="text" id="comm-note-input" placeholder="e.g. OC 'Starlight', Discord @user, 4pm">
+        <button class="btn-submit" onclick="confirmCommModal()">Add to Sale</button>
+        <button class="btn-cancel" onclick="closeCommModal()">Cancel</button>
+    </div>
+</div>
+
+<!-- MODAL 3: BUILT-IN CASH CALCULATOR -->
+<div id="cash-modal" class="modal-overlay" onclick="if(event.target===this) closeCashModal()">
+    <div class="modal">
+        <h3 style="margin-top:0; color:var(--secondary);">💵 Cash Payment</h3>
+        <div style="font-size:0.85rem; color:var(--text-dim);">Total Due</div>
+        <div id="cash-modal-due" style="font-size:1.8rem; font-weight:900; color:var(--primary); margin-bottom:10px;">£0.00</div>
+        
+        <label style="text-align:left;">Cash Given by Customer (£)</label>
+        <input type="number" id="cash-tendered-input" step="0.01" min="0" style="font-size:1.25rem; font-weight:800; text-align:center; margin-bottom:8px;" oninput="updateCashChange()">
+
+        <div class="quick-cash-grid" id="quick-cash-btns"></div>
+
+        <div class="change-box" id="cash-change-display">Change Due: £0.00</div>
+
+        <button class="btn-submit" id="confirm-cash-btn" style="background:var(--cash-green); color:#041f0e; box-shadow:none;" onclick="completeCheckout('Cash')">✅ Complete Cash Sale</button>
+        <button class="btn-cancel" onclick="closeCashModal()">Cancel</button>
+    </div>
+</div>
+
 <nav>
-    <button class="active" onclick="switchTab('sell', this)">🛒 Checkout</button>
-    <button onclick="switchTab('inv', this)">📦 Inventory</button>
-    <button onclick="switchTab('sales', this)">📊 Sales & Data</button>
+    <button class="active" id="nav-sell" onclick="switchTab('sell', this)">
+        <span class="nav-ico">🛒</span>
+        <span>Checkout</span>
+    </button>
+    <button id="nav-inv" onclick="switchTab('inv', this)">
+        <span class="nav-ico">📦</span>
+        <span>Inventory</span>
+    </button>
+    <button id="nav-sales" onclick="switchTab('sales', this)">
+        <span class="nav-ico">📊</span>
+        <span>Sales & Data</span>
+    </button>
 </nav>
 
 <script>
@@ -464,34 +969,45 @@
         { id: 2, name: "Rainbow Dash Sticker", price: 3.00, stock: 20, deal: "stickers3for8", hasSizes: false, sizes: null, customPrice: false, image: "" },
         { id: 3, name: "Derpy Hooves Sticker", price: 3.00, stock: 12, deal: "stickers3for8", hasSizes: false, sizes: null, customPrice: false, image: "" },
         { id: 4, name: "Mane 6 Con T-Shirt", price: 20.00, stock: 0, deal: "none", hasSizes: true, sizes: { 'S': 3, 'M': 5, 'L': 4, 'XL': 2, '2XL': 1 }, customPrice: false, image: "" },
-        { id: 5, name: "🎨 Sketch Commission", price: 25.00, stock: 10, deal: "none", hasSizes: false, sizes: null, customPrice: true, image: "" }
+        { id: 5, name: "Sketch Commission", price: 25.00, stock: 10, deal: "none", hasSizes: false, sizes: null, customPrice: true, image: "" }
     ];
     let sales = JSON.parse(localStorage.getItem('mlp_sales')) || [];
     
-    // cart keys can be:
-    // "prodId" (standard)
-    // "prodId___SIZE" (sized)
-    // "prodId___CUSTOM___timestamp" (custom priced commission item)
     let cart = {}; 
-    let customCartMeta = {}; // stores { customUnitPrice, customLabel } for custom-priced cart lines
+    let customCartMeta = {}; 
     let editingProductId = null;
     let pendingShirtProduct = null;
+    let pendingCommProduct = null;
+    let activeFilter = 'all';
+    let currentTab = 'sell';
 
     function saveData() {
         try {
             localStorage.setItem('mlp_products', JSON.stringify(products));
             localStorage.setItem('mlp_sales', JSON.stringify(sales));
         } catch (e) {
-            alert("⚠️ Local storage is full! Please download a backup, or use smaller product images.");
+            alert("⚠️ Local storage is full! Please export a backup, or use smaller product images.");
         }
     }
 
     function switchTab(tab, btn) {
+        currentTab = tab;
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
         document.getElementById(tab + '-view').classList.add('active');
         if (btn) btn.classList.add('active');
+
+        // Only show search/filter bar on Sell view
+        document.getElementById('sell-controls').style.display = (tab === 'sell') ? 'block' : 'none';
+        closeCartDrawer();
         renderAll();
+    }
+
+    function setFilter(filterType, btn) {
+        activeFilter = filterType;
+        document.querySelectorAll('.filter-pills .pill').forEach(p => p.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        renderGrid();
     }
 
     function toggleSizeFields() {
@@ -500,7 +1016,6 @@
         document.getElementById('sizes-stock-wrap').style.display = hasSizes ? 'block' : 'none';
     }
 
-    // Count how many total units of a product (or specific size) are currently in the cart
     function getInCartCount(prodId, size = null) {
         let count = 0;
         for (let key in cart) {
@@ -516,6 +1031,12 @@
         return count;
     }
 
+    function getTotalCartItems() {
+        let sum = 0;
+        for (let key in cart) sum += cart[key];
+        return sum;
+    }
+
     function sanitizeCart() {
         for (let cartKey in cart) {
             const parts = cartKey.split('___');
@@ -528,7 +1049,6 @@
                 continue;
             }
             if (secondPart === 'CUSTOM') {
-                // Verify total custom units don't exceed stock
                 if (p.stock <= 0) {
                     delete cart[cartKey];
                     delete customCartMeta[cartKey];
@@ -583,40 +1103,55 @@
         const query = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
         grid.innerHTML = '';
 
-        const filtered = products.filter(p => p.name.toLowerCase().includes(query));
+        const filtered = products.filter(p => {
+            if (!p.name.toLowerCase().includes(query)) return false;
+            if (activeFilter === 'deals') return p.deal && p.deal !== 'none';
+            if (activeFilter === 'shirts') return !!p.hasSizes;
+            if (activeFilter === 'commissions') return !!p.customPrice;
+            return true;
+        });
 
         if (filtered.length === 0) {
-            grid.innerHTML = '<div style="grid-column: span 2; text-align:center; color:var(--text-dim); padding:20px;">No items found.</div>';
+            grid.innerHTML = '<div style="grid-column: 1 / -1; text-align:center; color:var(--text-dim); padding:35px 15px;">No matching items found.</div>';
             return;
         }
 
         filtered.forEach(p => {
             const totalStock = getProductAvailableStock(p);
             const inCartTotal = getInCartCount(p.id);
-
             const left = totalStock - inCartTotal;
+
             const btn = document.createElement('div');
-            btn.className = 'prod-btn ' + (left <= 0 ? 'out-of-stock' : '');
+            btn.className = 'prod-btn' + (left <= 0 ? ' out-of-stock' : '') + (inCartTotal > 0 ? ' in-cart' : '');
             btn.onclick = () => handleProductClick(p.id);
 
             const imgHtml = p.image ? `<img src="${p.image}" class="prod-img">` : `<span>🦄</span>`;
             const dealObj = DEAL_CONFIG[p.deal];
-            const dealBadge = dealObj ? `<div class="badge-deal">${dealObj.label}</div>` : '';
-            const customBadge = p.customPrice ? `<div class="badge-custom">Custom £</div>` : '';
+            
+            let topLeftBadge = '';
+            if (p.customPrice) {
+                topLeftBadge = `<div class="badge-custom">🎨 Custom</div>`;
+            } else if (dealObj) {
+                topLeftBadge = `<div class="badge-deal">⭐ ${dealObj.label}</div>`;
+            }
+
+            const qtyBadge = inCartTotal > 0 ? `<div class="badge-qty">${inCartTotal}</div>` : '';
 
             let stockText = left > 0 ? `${left} left` : 'SOLD OUT';
             if (p.hasSizes && p.sizes && left > 0) {
                 const availSizes = SIZE_ORDER.filter(s => ((p.sizes[s] || 0) - getInCartCount(p.id, s)) > 0);
-                stockText = `${left} left (${availSizes.join(', ')})`;
+                stockText = availSizes.join(' · ');
             }
 
             btn.innerHTML = `
-                ${customBadge}
-                ${dealBadge}
+                ${topLeftBadge}
+                ${qtyBadge}
                 <div class="prod-img-wrap">${imgHtml}</div>
                 <div class="prod-name">${p.name}</div>
-                <div class="prod-price">${currency}${p.price.toFixed(2)}${p.customPrice ? '+' : ''}</div>
-                <div class="prod-stock">${stockText}</div>
+                <div class="prod-meta">
+                    <div class="prod-price">${currency}${p.price.toFixed(2)}${p.customPrice ? '+' : ''}</div>
+                    <div class="prod-stock">${stockText}</div>
+                </div>
             `;
             grid.appendChild(btn);
         });
@@ -633,30 +1168,7 @@
         if (p.hasSizes) {
             openSizeModal(p);
         } else if (p.customPrice) {
-            // Prompt for custom commission price & details
-            const enteredPrice = prompt(`Enter price (${currency}) for ${p.name}:`, p.price.toFixed(2));
-            if (enteredPrice === null) return;
-            const numPrice = parseFloat(enteredPrice);
-            if (isNaN(numPrice) || numPrice < 0) return alert("Please enter a valid price!");
-
-            const commDetails = prompt(`Add details for this ${p.name} (Customer name, OC, contact, etc.):\n(Leave blank if none)`, "");
-            if (commDetails === null) return;
-
-            const customKey = `${p.id}___CUSTOM___${Date.now()}`;
-            cart[customKey] = 1;
-            customCartMeta[customKey] = {
-                unitPrice: numPrice,
-                details: commDetails.trim()
-            };
-
-            // Also append to the main cart note box for convenience if provided
-            if (commDetails.trim()) {
-                const noteInput = document.getElementById('cart-note');
-                noteInput.value = noteInput.value 
-                    ? `${noteInput.value} | ${p.name}: ${commDetails.trim()}`
-                    : `${p.name}: ${commDetails.trim()}`;
-            }
-            renderAll();
+            openCommModal(p);
         } else {
             const currentQty = cart[p.id] || 0;
             if (currentQty < p.stock) {
@@ -666,7 +1178,7 @@
         }
     }
 
-    /* Size Modal Handling */
+    /* Shirt Size Modal */
     function openSizeModal(p) {
         pendingShirtProduct = p;
         document.getElementById('modal-shirt-title').innerText = p.name;
@@ -680,7 +1192,7 @@
 
             const btn = document.createElement('button');
             btn.className = 'size-pick-btn ' + (left <= 0 ? 'out' : '');
-            btn.innerHTML = `${size}<br><small style="font-size:0.75rem;">${left > 0 ? left + ' left' : 'OUT'}</small>`;
+            btn.innerHTML = `${size}<br><small style="font-size:0.75rem; font-weight:600; color:var(--text-dim);">${left > 0 ? left + ' left' : 'OUT'}</small>`;
             btn.onclick = () => selectShirtSize(size);
             container.appendChild(btn);
         });
@@ -707,6 +1219,56 @@
         }
     }
 
+    /* Custom Commission Modal */
+    function openCommModal(p) {
+        pendingCommProduct = p;
+        document.getElementById('modal-comm-title').innerText = `🎨 ${p.name}`;
+        document.getElementById('comm-price-input').value = p.price.toFixed(2);
+        document.getElementById('comm-note-input').value = '';
+        document.getElementById('comm-modal').style.display = 'flex';
+        setTimeout(() => document.getElementById('comm-note-input').focus(), 60);
+    }
+
+    function closeCommModal() {
+        document.getElementById('comm-modal').style.display = 'none';
+        pendingCommProduct = null;
+    }
+
+    function confirmCommModal() {
+        if (!pendingCommProduct) return;
+        const p = pendingCommProduct;
+        const numPrice = parseFloat(document.getElementById('comm-price-input').value);
+        if (isNaN(numPrice) || numPrice < 0) return alert("Please enter a valid price!");
+
+        const commDetails = document.getElementById('comm-note-input').value.trim();
+        const customKey = `${p.id}___CUSTOM___${Date.now()}`;
+        cart[customKey] = 1;
+        customCartMeta[customKey] = {
+            unitPrice: numPrice,
+            details: commDetails
+        };
+
+        if (commDetails) {
+            const noteInput = document.getElementById('cart-note');
+            noteInput.value = noteInput.value 
+                ? `${noteInput.value} | ${p.name}: ${commDetails}`
+                : `${p.name}: ${commDetails}`;
+        }
+
+        closeCommModal();
+        renderAll();
+    }
+
+    /* Slide-Up Cart Drawer */
+    function openCartDrawer() {
+        if (getTotalCartItems() === 0) return;
+        document.getElementById('cart-drawer').classList.add('open');
+    }
+
+    function closeCartDrawer() {
+        document.getElementById('cart-drawer').classList.remove('open');
+    }
+
     function changeCartQty(cartKey, delta) {
         if (!cart[cartKey]) return;
         const parts = cartKey.split('___');
@@ -716,16 +1278,10 @@
 
         if (delta > 0) {
             if (parts[1] === 'CUSTOM') {
-                if (getInCartCount(prodId) >= p.stock) {
-                    alert(`Only ${p.stock} available in stock!`);
-                    return;
-                }
+                if (getInCartCount(prodId) >= p.stock) return;
             } else {
                 const maxStock = getMaxStockForCartKey(cartKey);
-                if (cart[cartKey] + delta > maxStock) {
-                    alert(`Only ${maxStock} available in stock!`);
-                    return;
-                }
+                if (cart[cartKey] + delta > maxStock) return;
             }
         }
 
@@ -736,6 +1292,7 @@
         } else {
             cart[cartKey] = newQty;
         }
+        if (getTotalCartItems() === 0) closeCartDrawer();
         renderAll();
     }
 
@@ -744,6 +1301,7 @@
         customCartMeta = {};
         const noteEl = document.getElementById('cart-note');
         if (noteEl) noteEl.value = '';
+        closeCartDrawer();
         renderAll();
     }
 
@@ -754,7 +1312,6 @@
         return p.price;
     }
 
-    /* Cart Calculation with Multi-Deal "3 for £X" Support */
     function calculateTotals() {
         let subtotal = 0;
         let dealBuckets = {};
@@ -806,17 +1363,47 @@
         return { subtotal, totalDiscount, finalTotal, appliedDealsText };
     }
 
+    function updateFloatingBarText() {
+        const totals = calculateTotals();
+        const noteVal = (document.getElementById('cart-note')?.value || '').trim();
+        const subEl = document.getElementById('fc-sub');
+        if (totals.totalDiscount > 0) {
+            subEl.innerText = `🎉 Saved ${currency}${totals.totalDiscount.toFixed(2)} · Tap to edit ▴`;
+            subEl.style.color = 'var(--success)';
+        } else if (noteVal) {
+            subEl.innerText = `📝 ${noteVal}`;
+            subEl.style.color = 'var(--warning)';
+        } else {
+            subEl.innerText = `Tap to review items or add note ▴`;
+            subEl.style.color = 'var(--secondary)';
+        }
+    }
+
     function renderCart() {
         const container = document.getElementById('cart-items');
         const discountEl = document.getElementById('cart-discount');
         const totalEl = document.getElementById('cart-total');
+        const floatingBar = document.getElementById('floating-cart');
         container.innerHTML = '';
 
         const keys = Object.keys(cart);
+        const totalCount = getTotalCartItems();
+        const totals = calculateTotals();
+
+        // Update Floating Quick-Checkout Bar
+        if (totalCount > 0 && currentTab === 'sell') {
+            floatingBar.classList.add('visible');
+            document.getElementById('fc-count').innerText = totalCount;
+            document.getElementById('fc-total').innerText = `${currency}${totals.finalTotal.toFixed(2)}`;
+            updateFloatingBarText();
+        } else {
+            floatingBar.classList.remove('visible');
+        }
+
         if (keys.length === 0) {
-            container.innerHTML = '<p style="color:var(--text-dim); text-align:center;">Cart is empty. Tap items to add.</p>';
+            container.innerHTML = '<p style="color:var(--text-dim); text-align:center;">Cart is empty.</p>';
             discountEl.style.display = 'none';
-            totalEl.innerText = `Total: ${currency}0.00`;
+            totalEl.innerText = `${currency}0.00`;
             return;
         }
 
@@ -842,30 +1429,30 @@
                 }
                 atMax = getInCartCount(p.id) >= p.stock;
             } else if (secondPart) {
-                label = `${p.name} (${secondPart})`;
+                label = `${p.name} <span style="color:var(--secondary);">[${secondPart}]</span>`;
                 atMax = qty >= getMaxStockForCartKey(cartKey);
             } else {
                 atMax = qty >= getMaxStockForCartKey(cartKey);
             }
 
-            const dealTag = DEAL_CONFIG[p.deal] ? ` <small style="color:var(--primary);">[${DEAL_CONFIG[p.deal].label}]</small>` : '';
+            const dealTag = DEAL_CONFIG[p.deal] ? ` <small style="color:var(--primary); font-weight:700;">(${DEAL_CONFIG[p.deal].label})</small>` : '';
 
             container.innerHTML += `
                 <div class="cart-item">
-                    <div>
-                        <b>${qty}x</b> ${label}${dealTag}
-                        ${extraInfo}<br>
-                        <small style="color:var(--text-dim);">${currency}${lineSub.toFixed(2)}</small>
+                    <div style="min-width:0; flex:1;">
+                        <div style="font-weight:700; font-size:0.95rem;">${label}${dealTag}</div>
+                        ${extraInfo}
+                        <small style="color:var(--text-dim); font-weight:600;">${currency}${lineSub.toFixed(2)} (${currency}${unitPrice.toFixed(2)} ea)</small>
                     </div>
                     <div class="cart-controls">
-                        <button onclick="changeCartQty('${cartKey}', -1)">-</button>
+                        <button onclick="changeCartQty('${cartKey}', -1)">−</button>
+                        <span class="cart-qty-num">${qty}</span>
                         <button onclick="changeCartQty('${cartKey}', 1)" ${atMax ? 'disabled' : ''}>+</button>
                     </div>
                 </div>
             `;
         });
 
-        const totals = calculateTotals();
         if (totals.totalDiscount > 0) {
             discountEl.style.display = 'block';
             discountEl.innerHTML = totals.appliedDealsText.join('<br>');
@@ -873,29 +1460,79 @@
             discountEl.style.display = 'none';
         }
 
-        totalEl.innerText = `Total: ${currency}${totals.finalTotal.toFixed(2)}`;
+        totalEl.innerText = `${currency}${totals.finalTotal.toFixed(2)}`;
     }
 
-    function checkout(method) {
+    /* Checkout & Built-In Cash Calculator Modal */
+    function initiateCheckout(method) {
+        if (Object.keys(cart).length === 0) return;
+
+        if (method === 'Cash') {
+            openCashModal();
+        } else {
+            completeCheckout('Card/Tap');
+        }
+    }
+
+    function openCashModal() {
+        const totals = calculateTotals();
+        const due = totals.finalTotal;
+        document.getElementById('cash-modal-due').innerText = `${currency}${due.toFixed(2)}`;
+        const input = document.getElementById('cash-tendered-input');
+        input.value = due.toFixed(2);
+
+        // Build Quick Cash Note Buttons
+        const notes = [5, 10, 20, 50];
+        const quickContainer = document.getElementById('quick-cash-btns');
+        quickContainer.innerHTML = `<button class="qc-btn" onclick="setCashTendered(${due.toFixed(2)})">Exact</button>`;
+        notes.forEach(n => {
+            if (n >= due) {
+                quickContainer.innerHTML += `<button class="qc-btn" onclick="setCashTendered(${n})">£${n}</button>`;
+            }
+        });
+
+        updateCashChange();
+        document.getElementById('cash-modal').style.display = 'flex';
+    }
+
+    function setCashTendered(amount) {
+        document.getElementById('cash-tendered-input').value = Number(amount).toFixed(2);
+        updateCashChange();
+    }
+
+    function updateCashChange() {
+        const totals = calculateTotals();
+        const tendered = parseFloat(document.getElementById('cash-tendered-input').value) || 0;
+        const diff = tendered - totals.finalTotal;
+        const changeBox = document.getElementById('cash-change-display');
+        const confirmBtn = document.getElementById('confirm-cash-btn');
+
+        if (diff + 0.001 < 0) {
+            changeBox.style.color = 'var(--danger)';
+            changeBox.style.borderColor = 'rgba(255,82,82,0.4)';
+            changeBox.innerText = `Short by: ${currency}${Math.abs(diff).toFixed(2)}`;
+            confirmBtn.disabled = true;
+            confirmBtn.style.opacity = '0.4';
+        } else {
+            changeBox.style.color = 'var(--success)';
+            changeBox.style.borderColor = 'rgba(0,230,118,0.3)';
+            changeBox.innerText = `Change Due: ${currency}${Math.max(0, diff).toFixed(2)}`;
+            confirmBtn.disabled = false;
+            confirmBtn.style.opacity = '1';
+        }
+    }
+
+    function closeCashModal() {
+        document.getElementById('cash-modal').style.display = 'none';
+    }
+
+    function completeCheckout(method) {
         const keys = Object.keys(cart);
-        if (keys.length === 0) return alert("Cart is empty!");
+        if (keys.length === 0) return;
 
         const totals = calculateTotals();
         const saleNote = (document.getElementById('cart-note')?.value || '').trim();
 
-        // 1. Verify payment FIRST before touching stock
-        if (method === 'Cash') {
-            const tendered = prompt(`Total is ${currency}${totals.finalTotal.toFixed(2)}.\nEnter cash given by customer:`, totals.finalTotal.toFixed(2));
-            if (tendered === null) return;
-            const cashNum = parseFloat(tendered);
-            if (isNaN(cashNum) || cashNum + 0.001 < totals.finalTotal) {
-                return alert("Cash given is less than the total!");
-            }
-            const change = Math.max(0, cashNum - totals.finalTotal);
-            alert(`✅ Sale Complete!\nGive Change: ${currency}${change.toFixed(2)}`);
-        }
-
-        // 2. Deduct stock and record line items
         let itemsSummary = [];
         let soldLineItems = [];
 
@@ -940,17 +1577,19 @@
         sales.unshift({
             time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
             items: itemsSummary.join(', '),
-            note: saleNote, // Stores Commission / Purchase Note
+            note: saleNote,
             lineItems: soldLineItems,
             total: totals.finalTotal,
             method: method
         });
 
+        closeCashModal();
         clearCart();
         saveData();
         renderAll();
     }
 
+    /* Image Compression */
     function processImageFile(file, callback) {
         if (!file) return callback(null);
         const reader = new FileReader();
@@ -958,7 +1597,7 @@
             const img = new Image();
             img.onload = function() {
                 const canvas = document.createElement('canvas');
-                const maxDim = 200;
+                const maxDim = 220;
                 let width = img.width;
                 let height = img.height;
 
@@ -978,13 +1617,14 @@
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                callback(canvas.toDataURL('image/jpeg', 0.7));
+                callback(canvas.toDataURL('image/jpeg', 0.72));
             };
             img.src = e.target.result;
         };
         reader.readAsDataURL(file);
     }
 
+    /* Inventory Management */
     function saveProduct() {
         const name = document.getElementById('prod-name').value.trim();
         const price = parseFloat(document.getElementById('prod-price').value);
@@ -1029,7 +1669,6 @@
                     }
                 }
                 editingProductId = null;
-                alert("Product updated successfully!");
             } else {
                 products.push({
                     id: Date.now(),
@@ -1042,7 +1681,6 @@
                     sizes,
                     image: newImageData || ""
                 });
-                alert("Product added!");
             }
 
             cancelEdit();
@@ -1056,7 +1694,7 @@
         if (!p) return;
 
         editingProductId = id;
-        document.getElementById('form-title').innerText = `Edit: ${p.name}`;
+        document.getElementById('form-title').innerText = `✏️ Edit: ${p.name}`;
         document.getElementById('save-btn').innerText = "Update Product";
         document.getElementById('cancel-edit-btn').style.display = "block";
         document.getElementById('remove-img-wrap').style.display = p.image ? "block" : "none";
@@ -1085,7 +1723,7 @@
 
     function cancelEdit() {
         editingProductId = null;
-        document.getElementById('form-title').innerText = "Add New Product";
+        document.getElementById('form-title').innerText = "➕ Add New Product";
         document.getElementById('save-btn').innerText = "Save Product";
         document.getElementById('cancel-edit-btn').style.display = "none";
         document.getElementById('remove-img-wrap').style.display = "none";
@@ -1119,38 +1757,35 @@
         const list = document.getElementById('inv-list');
         list.innerHTML = '';
         products.forEach(p => {
-            const thumb = p.image ? `<img src="${p.image}" class="inv-thumb">` : `<div class="inv-thumb" style="display:flex;align-items:center;justify-content:center;">🦄</div>`;
+            const thumb = p.image ? `<img src="${p.image}" class="inv-thumb">` : `<div class="inv-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.3rem;">🦄</div>`;
             
             let stockDetails = `Stock: ${p.stock}`;
             if (p.hasSizes && p.sizes) {
-                stockDetails = `Sizes: S(${p.sizes['S']||0}) M(${p.sizes['M']||0}) L(${p.sizes['L']||0}) XL(${p.sizes['XL']||0}) 2XL(${p.sizes['2XL']||0})`;
+                stockDetails = `S:${p.sizes['S']||0} · M:${p.sizes['M']||0} · L:${p.sizes['L']||0} · XL:${p.sizes['XL']||0} · 2XL:${p.sizes['2XL']||0}`;
             }
 
             const dealObj = DEAL_CONFIG[p.deal];
-            const dealText = dealObj ? `<br><small style="color:var(--primary); font-weight:bold;">⭐ ${dealObj.label} Deal</small>` : '';
-            const customText = p.customPrice ? `<br><small style="color:var(--warning); font-weight:bold;">🎨 Custom Price / Commission</small>` : '';
+            const dealText = dealObj ? ` <span style="color:var(--primary); font-weight:700;">· ⭐ ${dealObj.label}</span>` : '';
+            const customText = p.customPrice ? ` <span style="color:var(--warning); font-weight:700;">· 🎨 Commission</span>` : '';
 
             list.innerHTML += `
                 <div class="inv-item">
-                    <div style="display:flex; align-items:center;">
+                    <div style="display:flex; align-items:center; min-width:0;">
                         ${thumb}
-                        <div>
-                            <b>${p.name}</b> (${currency}${p.price.toFixed(2)}${p.customPrice ? '+' : ''})<br>
-                            <small style="color:var(--text-dim);">${stockDetails}</small>
-                            ${dealText}
-                            ${customText}
+                        <div style="min-width:0;">
+                            <div style="font-weight:700; font-size:0.95rem;">${p.name} <span style="color:var(--primary);">${currency}${p.price.toFixed(2)}${p.customPrice ? '+' : ''}</span></div>
+                            <small style="color:var(--text-dim);">${stockDetails}${dealText}${customText}</small>
                         </div>
                     </div>
                     <div style="flex-shrink:0;">
                         <button class="edit-btn" onclick="startEditProduct(${p.id})">Edit</button>
-                        <button class="del-btn" onclick="deleteProduct(${p.id})">X</button>
+                        <button class="del-btn" onclick="deleteProduct(${p.id})">✕</button>
                     </div>
                 </div>
             `;
         });
     }
 
-    // Allows editing or adding a commission note on an existing sale in history
     function editSaleNote(index) {
         const sale = sales[index];
         if (!sale) return;
@@ -1177,21 +1812,30 @@
 
             list.innerHTML += `
                 <div class="inv-item">
-                    <div style="flex:1;">
-                        <b>${currency}${s.total.toFixed(2)}</b> (${s.method}) - <small style="color:var(--text-dim);">${s.time}</small><br>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:800; font-size:0.95rem;">
+                            <span style="color:var(--primary);">${currency}${s.total.toFixed(2)}</span> 
+                            <span style="font-size:0.78rem; color:var(--text-dim); font-weight:600;">· ${s.method} · ${s.time}</span>
+                        </div>
                         <small style="color:var(--text-dim);">${s.items}</small>
                         ${noteHtml}
                     </div>
                     <div style="flex-shrink:0; display:flex; align-items:center;">
-                        <button class="edit-btn" onclick="editSaleNote(${idx})" title="Edit Note">✏️ Note</button>
+                        <button class="edit-btn" onclick="editSaleNote(${idx})">✏️ Note</button>
                         <button class="del-btn" onclick="refundSale(${idx})">Void</button>
                     </div>
                 </div>
             `;
         });
 
-        document.getElementById('total-rev').innerText = `Total Revenue: ${currency}${rev.toFixed(2)}`;
-        document.getElementById('total-split').innerText = `Cash: ${currency}${cash.toFixed(2)} | Card: ${currency}${card.toFixed(2)}`;
+        if (sales.length === 0) {
+            list.innerHTML = '<p style="color:var(--text-dim); text-align:center; font-size:0.9rem;">No transactions recorded yet.</p>';
+        }
+
+        document.getElementById('total-rev').innerText = `${currency}${rev.toFixed(2)}`;
+        document.getElementById('total-cash').innerText = `${currency}${cash.toFixed(2)}`;
+        document.getElementById('total-card').innerText = `${currency}${card.toFixed(2)}`;
+        document.getElementById('header-rev-pill').innerText = `Today: ${currency}${rev.toFixed(2)}`;
     }
 
     function refundSale(index) {
@@ -1238,7 +1882,7 @@
             csv += `"${s.time}","${s.method}","${s.total.toFixed(2)}","${safeItems}","${safeNote}"\n`;
         });
         navigator.clipboard.writeText(csv).then(() => {
-            alert("Sales & Commission data copied to clipboard! Paste it into Notes, Excel, or Google Sheets.");
+            alert("✅ Sales & Commission data copied to clipboard! Paste it into Notes, Excel, or Google Sheets.");
         }).catch(() => {
             prompt("Copy sales data below:", csv);
         });
