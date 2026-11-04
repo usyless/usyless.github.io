@@ -135,6 +135,14 @@
         <div class="sidebarSection" id="exportSettings">
             <h3>Export Settings</h3>
             <div>
+                <label for="exportFormat" title="Default file format for trace export">Default Format</label>
+                <div class="moveButtons formatToggle" id="exportFormatToggle" role="group" aria-label="Default Format">
+                    <button type="button" class="standardButton" data-format="csv" active title="Export as .csv by default">.csv</button>
+                    <button type="button" class="standardButton" data-format="txt" title="Export as .txt by default">.txt</button>
+                </div>
+                <input type="hidden" id="exportFormat" value="csv"/>
+            </div>
+            <div>
                 <label for="PPO">Points Per Octave (PPO)</label>
                 <select name="PPO" id="PPO">
                     <option value="6">6</option>
